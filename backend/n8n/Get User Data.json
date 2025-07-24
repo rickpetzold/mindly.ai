@@ -1,0 +1,480 @@
+{
+  "name": "Get User Data",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a03a03df-b65d-415b-99a9-75cad9a8c636",
+              "name": "User ID",
+              "value": "={{ $json.body.userId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -80,
+        848
+      ],
+      "id": "cdfdbef1-b1b3-4038-b02a-3bc63f04459f",
+      "name": "Get user ID"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "apphA8EcNv4Hsdr4s",
+          "mode": "list",
+          "cachedResultName": "2Companion",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblGaeUH5omhU2sxm",
+          "mode": "list",
+          "cachedResultName": "Logs",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s/tblGaeUH5omhU2sxm"
+        },
+        "filterByFormula": "={User ID} = '{{ $json['User ID'] }}'",
+        "options": {
+          "fields": [
+            "Title",
+            "Full log",
+            "Log date",
+            "Dimension name"
+          ]
+        },
+        "sort": {
+          "property": [
+            {
+              "field": "Log date"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        144,
+        848
+      ],
+      "id": "5da3498a-72ae-4d98-9b41-7c584d0e8ceb",
+      "name": "Search logs from this user",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "RaC3QvBoQ336oiQw",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "All dimentions of that user",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        848
+      ],
+      "id": "4bce0afc-40b1-4924-87df-0b0928954c8b",
+      "name": "Aggregate dimensions data"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "apphA8EcNv4Hsdr4s",
+          "mode": "list",
+          "cachedResultName": "2Companion",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblHcWTZvJaCGhvSO",
+          "mode": "list",
+          "cachedResultName": "Dimension",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s/tblHcWTZvJaCGhvSO"
+        },
+        "filterByFormula": "={User ID} = '{{ $('Get user ID').item.json[\"User ID\"] }}'",
+        "options": {
+          "fields": [
+            "Name",
+            "Dimension ID",
+            "1-line summary"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        816,
+        848
+      ],
+      "id": "f953546d-53de-4eb7-af78-f72e4cddc37d",
+      "name": "Search dimensions from user",
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "RaC3QvBoQ336oiQw",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dca3a62c-6d93-4a1b-9210-bcf045730206",
+              "name": "Title",
+              "value": "={{ $json.Title }}",
+              "type": "string"
+            },
+            {
+              "id": "26e666da-09c1-4676-ae87-92e858f76fe3",
+              "name": "Log date",
+              "value": "={{ $json['Log date'] }}",
+              "type": "string"
+            },
+            {
+              "id": "eea8b7e0-dbe3-4517-b84c-364187803fc6",
+              "name": "Full log",
+              "value": "={{ $json['Full log'] }}",
+              "type": "string"
+            },
+            {
+              "id": "df739062-baa1-47d5-a677-8ddbadca6c71",
+              "name": "Is part of the dimension named",
+              "value": "={{ $json[\"Dimension name\"].join('') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        368,
+        848
+      ],
+      "id": "4088898d-df64-446c-8496-8c31d1ec11d5",
+      "name": "Clean logs data"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "18f68fbf-be61-4193-9fc9-358fda7a9516",
+              "name": "Dimension name",
+              "value": "={{ $json.Name }}",
+              "type": "string"
+            },
+            {
+              "id": "5170d76f-5916-4e32-9892-2681c2e0d93a",
+              "name": "Dimension 1-line summary",
+              "value": "={{ $json['1-line summary'] }}",
+              "type": "string"
+            },
+            {
+              "id": "a668e80b-bf30-495c-b29a-19912749e19c",
+              "name": "Dimension ID",
+              "value": "={{ $json['Dimension ID'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1040,
+        848
+      ],
+      "id": "8f1ff366-7b61-4391-b196-74d89f32f631",
+      "name": "Clean dimensions data"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "All logs",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        592,
+        848
+      ],
+      "id": "adddabc8-9fd5-4055-91b7-d805695b9145",
+      "name": "Aggregate logs data"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ca7582b5-fde2-4cc7-8eea-a172d774a5df",
+              "name": "final_prompt",
+              "value": "=Your role is to assist the user to explore their thoughts, mostly by helping them figure things out and your role is to ask relevant questions to help them get clarity on the thoughts and dimensions of their life they want to dive deeper into, and you excel at connecting the dots with their past thoughts that you know because you kinda have access to their full logs of journaling, which is super helpful to them as you can surface past thoughts and for example say \"You were telling last month that you noticed that you appreciate XYZ, would you say that this new project fits...?\".\n\nFor more context, the user uses the app 2Companion to log their thoughts to journal and you are the assistant that they call when they have time and they can focus to work and explore, deepdive into a specific dimension of their life.\n\n# Tool call\n\nEverytime the user mentions something that's worth capturing in the journal (in the backend, don't tell the user but just call the tool), call the tool \"store_information\". Condense the information and provide that to the tool.\n\n\n# Here's the info on the user.\n\nUser ID:\n{{ $('Get user ID').item.json['User ID'] }}\n\n# All dimensions that have been extracted from the user's logs\n\n{{ JSON.stringify($('Aggregate dimensions data').item.json, null, 2) }}\n\n# All logs of that user\n\n{{ JSON.stringify($('Aggregate logs data').item.json, null, 2) }}\n\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1488,
+        848
+      ],
+      "id": "3c061eba-3e90-4f00-b14b-42d36a830461",
+      "name": "Prepare output"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1712,
+        848
+      ],
+      "id": "af5bbd66-f21d-47f3-b6ff-648671bb1527",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -256,
+        1200
+      ],
+      "id": "e3f29634-2ae3-45d2-9e24-6cab6b79e936",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://twocompanion.app.n8n.cloud/webhook/get-user-data",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "userId",
+              "value": "recykwDWfFuasgENB"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        32,
+        1200
+      ],
+      "id": "9ec4e906-3e7a-4baa-a3b3-fbac181f0629",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "get-user-data",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -304,
+        848
+      ],
+      "id": "3dcfd323-1c13-426a-bc86-349196f1e06c",
+      "name": "Webhook to send back all user data",
+      "webhookId": "bb28e607-3042-483b-871d-a07986d8e5bf"
+    }
+  ],
+  "pinData": {
+    "Webhook to send back all user data": [
+      {
+        "json": {
+          "headers": {
+            "host": "twocompanion.app.n8n.cloud",
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15",
+            "content-length": "30",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "zh-CN,zh-Hans;q=0.9",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "217.9.109.94",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "DE",
+            "cf-ray": "9621c81c25499f37-FRA",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "application/json",
+            "origin": "https://2companion.preview.softr.app",
+            "referer": "https://2companion.preview.softr.app/",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "x-forwarded-for": "217.9.109.94, 162.158.94.94",
+            "x-forwarded-host": "twocompanion.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-71-c76b59f55-v64cs",
+            "x-is-trusted": "yes",
+            "x-real-ip": "217.9.109.94"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "userId": "recykwDWfFuasgENB"
+          },
+          "webhookUrl": "https://twocompanion.app.n8n.cloud/webhook/get-user-data",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Get user ID": {
+      "main": [
+        [
+          {
+            "node": "Search logs from this user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search logs from this user": {
+      "main": [
+        [
+          {
+            "node": "Clean logs data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search dimensions from user": {
+      "main": [
+        [
+          {
+            "node": "Clean dimensions data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean logs data": {
+      "main": [
+        [
+          {
+            "node": "Aggregate logs data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean dimensions data": {
+      "main": [
+        [
+          {
+            "node": "Aggregate dimensions data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate dimensions data": {
+      "main": [
+        [
+          {
+            "node": "Prepare output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate logs data": {
+      "main": [
+        [
+          {
+            "node": "Search dimensions from user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare output": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook to send back all user data": {
+      "main": [
+        [
+          {
+            "node": "Get user ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8f1527b4-66d4-40ae-9c67-8a3fa1a3ebd9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "70a3d09db6a82b183a295ca42d7a79935813af1750cf73d1926974ded643c31a"
+  },
+  "id": "v5roFYu99TF5OTqu",
+  "tags": []
+}

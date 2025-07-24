@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thought Logger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Base styles for the component wrapper */
+        .thought-logger-wrapper {
+            background-color: #FFFFFF;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            color: #4a4a4a;
+        }
+
+        /* Headings will use the same Inter font */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Transition styles for different steps in the UI */
+        .step {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+        }
+
+        .hidden-step {
+            opacity: 0;
+            transform: translateY(15px);
+            pointer-events: none;
+            width: 100%;
+            position: absolute; /* Position absolute to not affect layout when hidden */
+            padding: 0 2rem;
+        }
+
+        .visible-step {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+            position: static; /* Position static to take up space */
+        }
+
+        /* Interactive card styles */
+        .choice-card {
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+        }
+
+        .choice-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px -5px rgba(154, 137, 227, 0.2);
+        }
+
+        /* Custom audio player layout */
+        #custom-audio-player-container {
+            height: 120px;
+        }
+
+        #custom-audio-player {
+            position: relative;
+            height: 96px;
+        }
+
+        /* Loading overlay styles for feedback during processing */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 1rem;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .loading-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Spinner animation for loading indicator */
+        .spinner {
+            border: 4px solid rgba(154, 137, 227, 0.2);
+            border-left-color: #000000;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+<div class="thought-logger-wrapper flex items-center justify-center w-full min-h-screen p-1 sm:p-4">
+    <div class="w-full sm:max-w-[1100px] mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-8 relative flex flex-col justify-center overflow-hidden"
+         style="min-height: 520px;">
+        <div class="relative w-full">
+            <div id="choice-step" class="step visible-step space-y-8">
+                <div class="text-center">
+                    <h1 class="text-3xl font-bold text-[#4a4a4a]">Log a new thought</h1>
+                    <p class="text-[#7a7a7a] mt-2 max-w-sm mx-auto">Clear your mind. Log what's on your mind.</p>
+                </div>
+                <!-- MODIFICATION: Changed grid to be responsive. Stacks on mobile, grid on medium screens up. -->
+                <div class="grid grid-cols-1 md:grid-cols-2 md:grid-rows-2 gap-4 pt-4">
+                    <button id="speak-btn"
+                            class="choice-card bg-gray-50 p-6 rounded-xl text-left flex items-center gap-4 border-2 border-[#000000]">
+                        <div class="bg-[#000000] text-white p-3 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="23"></line>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="font-bold text-[#4a4a4a]">Record a thought</span>
+                            <p class="text-sm text-[#7a7a7a]">Instantly start recording an audio log</p>
+                        </div>
+                    </button>
+                    <!-- MODIFICATION: Added md:row-span-2 to make row spanning conditional on screen size -->
+                    <button id="picture-btn"
+                            class="choice-card bg-white p-6 rounded-xl text-left flex flex-col justify-center items-center text-center gap-4 border-2 border-gray-200 md:row-span-2">
+                        <div class="bg-gray-50 text-[#000000] p-3 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                <polyline points="21 15 16 10 5 21"></polyline>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="font-bold text-[#4a4a4a]">Log a picture</span>
+                            <p class="text-sm text-[#7a7a7a]">Capture or upload an image</p>
+                        </div>
+                    </button>
+                    <button id="write-btn"
+                            class="choice-card bg-white p-6 rounded-xl text-left flex items-center gap-4 border-2 border-gray-200">
+                        <div class="bg-gray-50 text-[#000000] p-3 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="font-bold text-[#4a4a4a]">Write a thought</span>
+                            <p class="text-sm text-[#7a7a7a]">Simply type it or paste a text</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div id="audio-step" class="step hidden-step hidden flex-col justify-between" style="min-height: 400px;">
+                <div class="space-y-6">
+                    <div class="relative text-center">
+                        <button class="back-to-choice-btn absolute top-0 left-0 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                        </button>
+                        <h1 class="text-2xl font-bold text-[#4a4a4a]">Recording your thought</h1>
+                        <p id="audio-subtitle" class="text-[#7a7a7a] mt-1">Press the button to stop.</p>
+                    </div>
+                    <div id="visualizer-container" class="h-24 flex items-center justify-center bg-gray-50 rounded-lg">
+                        <canvas id="visualizer" class="w-full h-full"></canvas>
+                    </div>
+                    <div id="custom-audio-player-container" class="hidden">
+                        <div id="custom-audio-player">
+                            <canvas id="waveform-canvas" class="w-full h-full rounded-lg bg-gray-50 cursor-pointer"></canvas>
+                            <button id="custom-play-pause-btn" class="absolute inset-0 flex items-center justify-center text-[#000000] z-10">
+                                <svg id="custom-play-icon" class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                                </svg>
+                                <svg id="custom-pause-icon" class="w-16 h-16 hidden" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1zm4 0a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="w-full h-1 bg-gray-100 rounded-full mt-2 cursor-pointer" id="progress-bar-container">
+                            <div id="custom-progress-bar" class="h-full bg-[#000000] rounded-full" style="width: 0%;"></div>
+                        </div>
+                        <div id="time-display" class="text-xs text-gray-500 text-right mt-1">00:00 / 00:00</div>
+                    </div>
+                    <div id="timer" class="text-center text-4xl font-mono text-gray-400 tracking-wider">00:00</div>
+                    <p id="max-time-note" class="text-xs text-gray-400 text-center -mt-4">Max recording time is 5 minutes.</p>
+                    <div id="controls" class="space-y-4 pt-4">
+                        <button id="record-btn" class="w-full flex items-center justify-center gap-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-200 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300">
+                            <span id="record-btn-text">Stop recording</span>
+                        </button>
+                        <div id="secondary-controls" class="space-y-4 hidden">
+                            <button id="restart-btn" class="w-full flex items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 text-[#4a4a4a] font-semibold py-3 px-4 rounded-xl transition-all duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                </svg>
+                                Restart
+                            </button>
+                            <button id="send-audio-log-btn" class="w-full flex items-center justify-center gap-2 bg-[#000000] hover:bg-[#1C1C1C] text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                                Send Log
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="text-step" class="step hidden-step hidden flex-col justify-between" style="min-height: 400px;">
+                <div class="space-y-6">
+                    <div class="relative text-center">
+                        <button class="back-to-choice-btn absolute top-0 left-0 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                        </button>
+                        <h1 id="text-step-title" class="text-2xl font-bold text-[#4a4a4a]">Log your thought</h1>
+                        <p id="text-step-desc" class="text-[#7a7a7a] mt-1">Type your thoughts below.</p>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <label for="log-input" class="font-semibold text-[#4a4a4a]">Your thought</label>
+                            <!-- MODIFICATION: Added placeholder text -->
+                            <textarea id="log-input" rows="8" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-lg focus:ring-2 focus:ring-[#000000] focus:border-[#000000] transition-all duration-300 text-[#4a4a4a]" placeholder="I just learned that... and it made me realize that I should focus more on..."></textarea>
+                        </div>
+                    </div>
+                    <button id="send-text-log-btn" class="w-full flex items-center justify-center gap-3 bg-[#000000] hover:bg-[#1C1C1C] text-white font-bold py-3 px-4 rounded-xl transition-all duration-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                        Send Log
+                    </button>
+                </div>
+            </div>
+
+            <div id="picture-step" class="step hidden-step hidden flex-col justify-between" style="min-height: 400px;">
+                <div class="space-y-6">
+                    <div class="relative text-center">
+                        <button class="back-to-choice-btn absolute top-0 left-0 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                        </button>
+                        <h1 class="text-2xl font-bold text-[#4a4a4a]">Upload a picture</h1>
+                        <p class="text-[#7a7a7a] mt-1">Choose a file or take a photo.</p>
+                    </div>
+                    
+                    <div id="picture-choice-container" class="space-y-4">
+                        <input type="file" id="image-upload-input" accept="image/*" class="hidden">
+                        <button id="select-image-btn" class="w-full flex items-center justify-center gap-3 bg-gray-200 hover:bg-gray-300 text-[#4a4a4a] font-bold py-3 px-4 rounded-xl transition-all duration-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            Select Image
+                        </button>
+                        <button id="open-camera-btn" class="w-full flex items-center justify-center gap-3 bg-gray-200 hover:bg-gray-300 text-[#4a4a4a] font-bold py-3 px-4 rounded-xl transition-all duration-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                <circle cx="12" cy="13" r="4"></circle>
+                            </svg>
+                            Take Photo
+                        </button>
+                    </div>
+
+                    <div id="camera-container" class="hidden space-y-4">
+                        <div class="relative w-full aspect-video bg-black rounded-lg overflow-hidden border border-gray-200">
+                            <video id="camera-preview" class="w-full h-full object-cover" autoplay playsinline></video>
+                        </div>
+                        <button id="capture-photo-btn" class="w-full flex items-center justify-center gap-3 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-xl transition-all duration-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <circle cx="12" cy="12" r="6"></circle>
+                            </svg>
+                            Capture
+                        </button>
+                    </div>
+                    
+                    <div id="image-review-container" class="hidden space-y-4">
+                        <img id="preview-image" class="w-full h-auto max-h-64 object-contain rounded-lg border border-gray-200 mx-auto" alt="Image preview">
+                        <div id="caption-container" class="space-y-2">
+                            <label for="caption-input" class="font-semibold text-[#4a4a4a]">Image Caption</label>
+                            <textarea id="caption-input" rows="3" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-lg focus:ring-2 focus:ring-[#000000] focus:border-[#000000] transition-all duration-300 text-[#4a4a4a]" placeholder="What's on your mind about this image?"></textarea>
+                        </div>
+                    </div>
+                    
+                    <button id="send-picture-log-btn" class="w-full flex items-center justify-center gap-3 bg-[#000000] hover:bg-[#1C1C1C] text-white font-bold py-3 px-4 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                        Send Log
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="spinner"></div>
+            <p id="loading-text" class="mt-4 text-lg font-semibold text-[#4a4a4a]">Processing...</p>
+        </div>
+
+        <div id="error-display" class="hidden absolute bottom-8 left-8 right-8 bg-red-100 text-red-700 p-4 rounded-lg shadow-lg z-50 transform translate-y-4 opacity-0 border border-red-200">
+            <div class="flex items-center justify-between">
+                <p id="error-text" class="mr-4"></p>
+                <button id="error-close-btn" class="font-bold text-xl leading-none text-red-700">&times;</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // IIFE to encapsulate the script and avoid polluting the global scope
+    (() => {
+        // Ensure the script only initializes once per component
+        const mainContainer = document.querySelector('.thought-logger-wrapper');
+        if (!mainContainer || mainContainer.dataset.initialized) {
+            return;
+        }
+        mainContainer.dataset.initialized = 'true';
+
+        // --- DOM Element Selection ---
+        const choiceStep = mainContainer.querySelector('#choice-step');
+        const audioStep = mainContainer.querySelector('#audio-step');
+        const textStep = mainContainer.querySelector('#text-step');
+        const pictureStep = mainContainer.querySelector('#picture-step');
+        const audioSubtitle = mainContainer.querySelector('#audio-subtitle');
+        const timerEl = mainContainer.querySelector('#timer');
+        const maxTimeNote = mainContainer.querySelector('#max-time-note');
+        const secondaryControls = mainContainer.querySelector('#secondary-controls');
+        const customAudioPlayerContainer = mainContainer.querySelector('#custom-audio-player-container');
+        const visualizerContainer = mainContainer.querySelector('#visualizer-container');
+        const visualizer = mainContainer.querySelector('#visualizer');
+        const visualizerCtx = visualizer.getContext('2d');
+        const waveformCanvas = mainContainer.querySelector('#waveform-canvas');
+        const waveformCtx = waveformCanvas.getContext('2d');
+        const customPlayIcon = mainContainer.querySelector('#custom-play-icon');
+        const customPauseIcon = mainContainer.querySelector('#custom-pause-icon');
+        const progressBarContainer = mainContainer.querySelector('#progress-bar-container');
+        const customProgressBar = mainContainer.querySelector('#custom-progress-bar');
+        const timeDisplay = mainContainer.querySelector('#time-display');
+        const logInput = mainContainer.querySelector('#log-input');
+        const loadingOverlay = mainContainer.querySelector('#loading-overlay');
+        const loadingText = mainContainer.querySelector('#loading-text');
+
+        // --- Picture DOM elements ---
+        const imageUploadInput = mainContainer.querySelector('#image-upload-input');
+        const previewImage = mainContainer.querySelector('#preview-image');
+        const sendPictureLogBtn = mainContainer.querySelector('#send-picture-log-btn');
+        const pictureChoiceContainer = mainContainer.querySelector('#picture-choice-container');
+        const cameraContainer = mainContainer.querySelector('#camera-container');
+        const cameraPreview = mainContainer.querySelector('#camera-preview');
+        const imageReviewContainer = mainContainer.querySelector('#image-review-container');
+        const captionInput = mainContainer.querySelector('#caption-input');
+        
+        // --- State Variables ---
+        let audioForPlayback = new Audio();
+        let audioContext, analyser, visualizerAnimation, mediaRecorder, timerInterval, mediaStream;
+        let audioChunks = [], recordedAudioBlob = null;
+        let isRecording = false, isPlayingCustom = false;
+        let smoothedVolume = 0, seconds = 0;
+        let capturedImageBlob = null;
+        let isCameraOpen = false;
+        
+        const userId = window.logged_in_user?.record_id || null;
+
+        // --- API Endpoints ---
+        const AUDIO_WEBHOOK_URL = '/api/logs/audio';
+        const TEXT_WEBHOOK_URL = '/api/logs/text';
+        const IMAGE_WEBHOOK_URL = '/api/logs/image';
+        
+        // --- UI Feedback Functions ---
+        const showLoading = (message) => {
+            loadingText.textContent = message;
+            loadingOverlay.classList.add('visible');
+        };
+        const hideLoading = () => loadingOverlay.classList.remove('visible');
+
+        const showError = (message) => {
+            const errorDisplay = mainContainer.querySelector('#error-display');
+            mainContainer.querySelector('#error-text').textContent = message;
+            errorDisplay.classList.remove('hidden');
+            setTimeout(() => errorDisplay.classList.remove('translate-y-4', 'opacity-0'), 10);
+        };
+        const hideError = () => {
+            const errorDisplay = mainContainer.querySelector('#error-display');
+            errorDisplay.classList.add('translate-y-4', 'opacity-0');
+            setTimeout(() => errorDisplay.classList.add('hidden'), 300);
+        };
+
+        // --- Core UI Logic ---
+        const switchStep = (from, to) => {
+            from.classList.remove('visible-step');
+            from.classList.add('hidden-step');
+            setTimeout(() => {
+                from.classList.add('hidden');
+                to.classList.remove('hidden', 'hidden-step');
+                to.classList.add('visible-step');
+            }, 300); // Duration matches CSS transition
+        };
+
+        // --- Audio Handling Functions ---
+        const formatTime = (timeInSeconds) => {
+            if (isNaN(timeInSeconds)) return '00:00';
+            const minutes = Math.floor(timeInSeconds / 60).toString().padStart(2, '0');
+            const seconds = Math.floor(timeInSeconds % 60).toString().padStart(2, '0');
+            return `${minutes}:${seconds}`;
+        };
+
+        const updateTimer = () => {
+            seconds++;
+            timerEl.textContent = formatTime(seconds);
+            if (seconds >= 300) stopRecording(); // Auto-stop at 5 minutes
+        };
+
+        const drawLiveVisualizer = (timestamp) => {
+            visualizerAnimation = requestAnimationFrame(drawLiveVisualizer);
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+            const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+            smoothedVolume = Math.max(average, smoothedVolume * 0.9);
+
+            const { width, height } = visualizer;
+            visualizerCtx.clearRect(0, 0, width, height);
+            const centerY = height / 2;
+            const amplitude = (smoothedVolume / 255) * height * 0.8;
+
+            visualizerCtx.lineWidth = 3;
+            const gradient = visualizerCtx.createLinearGradient(0, 0, width, 0);
+            gradient.addColorStop(0, '#EB6A6A');
+            gradient.addColorStop(1, '#DF4A4A');
+            visualizerCtx.strokeStyle = gradient;
+
+            for (let i = 0; i < 3; i++) {
+                visualizerCtx.globalAlpha = 1 - (i * 0.3);
+                visualizerCtx.beginPath();
+                visualizerCtx.moveTo(0, centerY);
+                for (let x = 0; x < width; x++) {
+                    const angle = (x / width) * Math.PI * 2 + (timestamp / 1000) * (i + 1);
+                    const y = centerY + Math.sin(angle) * amplitude * (1 - i * 0.2);
+                    visualizerCtx.lineTo(x, y);
+                }
+                visualizerCtx.stroke();
+            }
+            visualizerCtx.globalAlpha = 1;
+        };
+
+        const startVisualizer = (stream) => {
+            if (!audioContext) audioContext = new(window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            const source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+            drawLiveVisualizer(0);
+        };
+
+        const stopVisualizer = () => {
+            if (visualizerAnimation) cancelAnimationFrame(visualizerAnimation);
+            visualizerCtx.clearRect(0, 0, visualizer.width, visualizer.height);
+        };
+
+        const startRecording = async () => {
+            hideError();
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                isRecording = true;
+                
+                switchStep(choiceStep, audioStep);
+                mainContainer.querySelector('#record-btn').classList.remove('hidden');
+
+                audioChunks = [];
+                let options = {};
+                if (MediaRecorder.isTypeSupported('audio/webm')) {
+                    options = { mimeType: 'audio/webm' };
+                } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                    options = { mimeType: 'audio/mp4' };
+                } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+                    options = { mimeType: 'audio/ogg;codecs=opus' };
+                }
+                mediaRecorder = new MediaRecorder(stream, options);
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const mimeType = mediaRecorder.mimeType || 'audio/mp4';
+                    recordedAudioBlob = new Blob(audioChunks, { type: mimeType });
+                    audioForPlayback.src = URL.createObjectURL(recordedAudioBlob);
+                    stream.getTracks().forEach(track => track.stop());
+
+                    mainContainer.querySelector('#record-btn').classList.add('hidden');
+                    visualizerContainer.classList.add('hidden');
+                    timerEl.classList.add('hidden');
+                    maxTimeNote.classList.add('hidden');
+                    customAudioPlayerContainer.classList.remove('hidden');
+                    secondaryControls.classList.remove('hidden');
+                    audioSubtitle.textContent = "Review your audio log.";
+                    generateStaticWaveform();
+                };
+                
+                startVisualizer(stream);
+                mediaRecorder.start();
+                seconds = 0;
+                timerEl.textContent = formatTime(0);
+                timerInterval = setInterval(updateTimer, 1000);
+
+            } catch (error) {
+                showError('Could not access microphone. Please allow access.');
+                console.error("Microphone access error:", error);
+                switchStep(audioStep, choiceStep);
+            }
+        };
+
+        const stopRecording = () => {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                clearInterval(timerInterval);
+                stopVisualizer();
+            }
+        };
+
+        const resetAudioUI = () => {
+            hideError();
+            if (mediaRecorder && isRecording) stopRecording();
+            recordedAudioBlob = null;
+            audioChunks = [];
+            isPlayingCustom = false;
+            if (!audioForPlayback.paused) audioForPlayback.pause();
+            
+            customAudioPlayerContainer.classList.add('hidden');
+            secondaryControls.classList.add('hidden');
+            visualizerContainer.classList.remove('hidden');
+            timerEl.classList.remove('hidden');
+            maxTimeNote.classList.remove('hidden');
+            
+            audioSubtitle.textContent = "Press the button to stop.";
+            seconds = 0;
+            timerEl.textContent = formatTime(0);
+            timeDisplay.textContent = '00:00 / 00:00';
+            customProgressBar.style.width = '0%';
+        };
+
+        async function generateStaticWaveform() {
+            if (!recordedAudioBlob || !waveformCanvas) return;
+            if (!audioContext) audioContext = new(window.AudioContext || window.webkitAudioContext)();
+            try {
+                const arrayBuffer = await recordedAudioBlob.arrayBuffer();
+                const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                const data = audioBuffer.getChannelData(0);
+                const { width, height } = waveformCanvas;
+                waveformCtx.clearRect(0, 0, width, height);
+                waveformCtx.lineWidth = 2;
+                waveformCtx.strokeStyle = '#6F6F6F';
+                const step = Math.ceil(data.length / width);
+                const amp = height / 2;
+                waveformCtx.beginPath();
+                for (let i = 0; i < width; i++) {
+                    let min = 1.0, max = -1.0;
+                    for (let j = 0; j < step; j++) {
+                        const datum = data[(i * step) + j];
+                        if (datum < min) min = datum;
+                        if (datum > max) max = datum;
+                    }
+                    waveformCtx.moveTo(i, amp + min * amp);
+                    waveformCtx.lineTo(i, amp + max * amp);
+                }
+                waveformCtx.stroke();
+            } catch (e) {
+                console.error("Error decoding audio data for waveform", e);
+                showError("Could not generate waveform for the recording.");
+            }
+        }
+
+        function updatePlaybackProgress() {
+            if (audioForPlayback.paused || !audioForPlayback.duration) return;
+            const { currentTime, duration } = audioForPlayback;
+            const progress = (currentTime / duration);
+            customProgressBar.style.width = `${progress * 100}%`;
+            timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+            requestAnimationFrame(updatePlaybackProgress);
+        }
+
+        audioForPlayback.onloadedmetadata = () => {
+            timeDisplay.textContent = `${formatTime(0)} / ${formatTime(audioForPlayback.duration)}`;
+        };
+        
+        const seek = (event) => {
+            if (!audioForPlayback.duration) return;
+            const { clientX } = event.type.includes('touch') ? event.touches[0] : event;
+            const bounds = progressBarContainer.getBoundingClientRect();
+            const progress = Math.max(0, Math.min(1, (clientX - bounds.left) / bounds.width));
+            audioForPlayback.currentTime = audioForPlayback.duration * progress;
+            updatePlaybackProgress();
+        };
+
+        const stopCameraStream = () => {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+        };
+
+        const resetPictureUI = () => {
+            capturedImageBlob = null;
+            imageReviewContainer.classList.add('hidden');
+            captionInput.value = '';
+            sendPictureLogBtn.disabled = true;
+            sendPictureLogBtn.classList.add('hidden');
+            pictureChoiceContainer.classList.remove('hidden');
+            cameraContainer.classList.add('hidden');
+            stopCameraStream();
+            isCameraOpen = false;
+            hideError();
+        };
+
+        const showReviewUI = () => {
+            pictureChoiceContainer.classList.add('hidden');
+            cameraContainer.classList.add('hidden');
+            imageReviewContainer.classList.remove('hidden');
+            sendPictureLogBtn.classList.remove('hidden');
+            sendPictureLogBtn.disabled = false;
+        };
+
+        const selectImage = () => imageUploadInput.click();
+
+        imageUploadInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                    showError("Image file is too large. Max 5MB allowed.");
+                    resetPictureUI();
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImage.src = e.target.result;
+                    capturedImageBlob = file;
+                    showReviewUI();
+                };
+                reader.onerror = () => {
+                    showError("Could not read the image file.");
+                    resetPictureUI();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                resetPictureUI();
+            }
+        });
+
+        const openCamera = async () => {
+            hideError();
+            if (!('mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices)) {
+                showError("Camera API is not supported by your browser.");
+                return;
+            }
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" }
+                }).catch(() => navigator.mediaDevices.getUserMedia({ video: true }));
+
+                isCameraOpen = true;
+                cameraPreview.srcObject = mediaStream;
+                pictureChoiceContainer.classList.add('hidden');
+                cameraContainer.classList.remove('hidden');
+                sendPictureLogBtn.classList.add('hidden');
+            } catch (error) {
+                showError('Could not access camera. Please allow access.');
+                console.error("Camera access error:", error);
+                resetPictureUI();
+            }
+        };
+
+        const capturePhoto = () => {
+            if (!isCameraOpen || !mediaStream) return;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = cameraPreview.videoWidth;
+            canvas.height = cameraPreview.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(cameraPreview, 0, 0, canvas.width, canvas.height);
+            
+            stopCameraStream();
+
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    if (blob.size > 5 * 1024 * 1024) {
+                        showError("Captured image is too large. Max 5MB allowed.");
+                        resetPictureUI();
+                        return;
+                    }
+                    capturedImageBlob = blob;
+                    previewImage.src = URL.createObjectURL(blob);
+                    isCameraOpen = false;
+                    showReviewUI();
+                } else {
+                    showError("Could not capture image from camera.");
+                    resetPictureUI();
+                }
+            }, 'image/jpeg', 0.9);
+        };
+
+
+        mainContainer.addEventListener('click', (event) => {
+            const target = event.target.closest('button');
+            if (!target) return;
+
+            const id = target.id;
+
+            if (id === 'speak-btn') startRecording();
+            else if (id === 'write-btn') switchStep(choiceStep, textStep);
+            else if (id === 'picture-btn') {
+                switchStep(choiceStep, pictureStep);
+                resetPictureUI();
+            } 
+            else if (id === 'record-btn') stopRecording();
+            else if (id === 'restart-btn') {
+                resetAudioUI();
+                startRecording();
+            } 
+            else if (id === 'error-close-btn') hideError();
+            else if (id === 'custom-play-pause-btn') {
+                if (audioForPlayback.paused) audioForPlayback.play();
+                else audioForPlayback.pause();
+            } 
+            else if (target.classList.contains('back-to-choice-btn')) {
+                if (audioStep.classList.contains('visible-step')) {
+                    resetAudioUI();
+                    switchStep(audioStep, choiceStep);
+                } else if (textStep.classList.contains('visible-step')) {
+                    logInput.value = '';
+                    switchStep(textStep, choiceStep);
+                } else if (pictureStep.classList.contains('visible-step')) {
+                    if (isCameraOpen || !imageReviewContainer.classList.contains('hidden')) {
+                        resetPictureUI();
+                    } else {
+                        switchStep(pictureStep, choiceStep);
+                    }
+                }
+            } 
+            else if (id === 'select-image-btn') selectImage();
+            else if (id === 'open-camera-btn') openCamera();
+            else if (id === 'capture-photo-btn') capturePhoto();
+            else if (id === 'send-audio-log-btn' || id === 'send-text-log-btn' || id === 'send-picture-log-btn') {
+                handleSendLog(id);
+            }
+        });
+
+        const handleSendLog = (buttonId) => {
+            let url, payload, loadingMessage;
+
+            if (buttonId === 'send-audio-log-btn') {
+                if (!recordedAudioBlob) return;
+                loadingMessage = 'Logging your thought...';
+                url = AUDIO_WEBHOOK_URL;
+                const formData = new FormData();
+                const fileExtension = recordedAudioBlob.type.includes('mp4') ? 'm4a' : 'webm';
+                formData.append('file', recordedAudioBlob, `thought-log.${fileExtension}`);
+                if (userId) formData.append('userId', userId);
+                payload = { method: 'POST', body: formData };
+            } 
+            else if (buttonId === 'send-text-log-btn') {
+                const textLog = logInput.value;
+                if (!textLog.trim()) {
+                    showError("Please enter some text before sending.");
+                    return;
+                }
+                loadingMessage = 'Logging your thought...';
+                url = TEXT_WEBHOOK_URL;
+                const body = { "text_log": textLog, "userId": userId };
+                payload = { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } };
+            } 
+            else if (buttonId === 'send-picture-log-btn') {
+                if (!capturedImageBlob) {
+                    showError("No image selected or captured.");
+                    return;
+                }
+                loadingMessage = 'Uploading your picture...';
+                url = IMAGE_WEBHOOK_URL;
+                const formData = new FormData();
+                formData.append('file', capturedImageBlob, `picture-log.${capturedImageBlob.type.split('/')[1]}`);
+                formData.append('caption', captionInput.value);
+                if (userId) formData.append('userId', userId);
+                payload = { method: 'POST', body: formData };
+            }
+
+            showLoading(loadingMessage);
+            hideError();
+
+            fetch(url, payload).catch(err => console.error("Webhook failed:", err));
+
+            setTimeout(() => {
+                hideLoading();
+                if (audioStep.classList.contains('visible-step')) {
+                    resetAudioUI();
+                    switchStep(audioStep, choiceStep);
+                } else if (textStep.classList.contains('visible-step')) {
+                    logInput.value = '';
+                    switchStep(textStep, choiceStep);
+                } else if (pictureStep.classList.contains('visible-step')) {
+                    resetPictureUI();
+                    switchStep(pictureStep, choiceStep);
+                }
+            }, 2000);
+        };
+
+        [progressBarContainer, waveformCanvas].forEach(el => {
+            if(el) el.addEventListener('click', seek)
+        });
+
+        audioForPlayback.onplay = () => {
+            isPlayingCustom = true;
+            customPlayIcon.classList.add('hidden');
+            customPauseIcon.classList.remove('hidden');
+            requestAnimationFrame(updatePlaybackProgress);
+        };
+        audioForPlayback.onpause = audioForPlayback.onended = () => {
+            isPlayingCustom = false;
+            customPlayIcon.classList.remove('hidden');
+            customPauseIcon.classList.add('hidden');
+        };
+
+        // --- Initial Setup ---
+        timeDisplay.textContent = '00:00 / 00:00';
+        sendPictureLogBtn.classList.add('hidden');
+    })();
+
+    // Voice Agent Script - Separate namespace
+    (() => {
+        var vapiInstance = null;
+        // Remove hardcoded API key - will be handled by backend
+        const buttonConfig = {
+          theme: "dark",
+          mode: "voice",
+          metadata: {
+            userId: "recXYZ"
+          }
+        };
+      
+        // Remove hardcoded webhook URL - will be handled by backend
+      
+        // Self-executing function to load Vapi SDK
+        (function (d, t) {
+          var g = d.createElement(t),
+            s = d.getElementsByTagName(t)[0];
+          g.src = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
+          g.defer = true;
+          g.async = true;
+          s.parentNode.insertBefore(g, s);
+      
+          // This function runs once the Vapi SDK script is loaded
+          g.onload = async function () {
+            let softrUserId = null;
+            let summaryPrompt = `You are a helpful and friendly AI assistant.`;
+            let firstMessageContent = `Hello there! How can I help you today?`;
+      
+            // --- 1. Fetch userId from Softr's window object ---
+            softrUserId = window.logged_in_user?.record_id || null;
+            
+            if (!softrUserId) {
+              console.warn("Softr User ID not found from window.logged_in_user?.record_id. Using default 'recXYZ' as a fallback for initial webhook call and metadata.");
+              softrUserId = buttonConfig.metadata.userId;
+            } else {
+              console.log("Softr User ID found:", softrUserId);
+            }
+      
+            // --- Update buttonConfig.metadata.userId with the determined userId ---
+            buttonConfig.metadata.userId = softrUserId;
+            console.log("Vapi button metadata userId set to:", buttonConfig.metadata.userId);
+      
+            // --- 2. Call backend proxy to get user data ---
+            if (softrUserId) {
+              try {
+                const response = await fetch('/api/vapi/start', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ userId: softrUserId }),
+                });
+      
+                if (!response.ok) {
+                  const errorText = await response.text();
+                  throw new Error(`Backend proxy responded with status ${response.status}: ${errorText}`);
+                }
+      
+                const data = await response.json();
+                console.log("User data from backend proxy:", data);
+      
+                summaryPrompt = `${data.userData.final_prompt}`
+                firstMessageContent = `Hello Rick! Its a wonderful day in Berlin today. How can I assist you?`;
+      
+              } catch (error) {
+                console.error("Failed to fetch user data from backend proxy:", error);
+                summaryPrompt += ` I encountered an issue retrieving specific user data. Please provide general assistance.`;
+                firstMessageContent = `Hello there! I'm sorry, I couldn't load your specific profile, but I'm ready to help.`;
+              }
+            } else {
+               summaryPrompt += ` No user ID was found, so please provide general assistance.`;
+            }
+                      
+      console.log(JSON.stringify(summaryPrompt));
+      
+            // Note: For Vapi, you'll need to handle API key differently
+            // Option 1: Use Vapi's client-side SDK with a public key
+            // Option 2: Create a custom Vapi integration through your backend
+            // For now, keeping the original approach but with backend proxy for user data
+            
+            vapiInstance = window.vapiSDK.run({
+              apiKey: "8be31574-f304-4d41-a747-8869f5830f26", // Still exposed - needs different approach
+              assistant: {
+                model: {
+                  provider: "openai",
+                  model: "gpt-4o",
+                  temperature: 0.7,
+                              messages: [
+          {
+            "role": "system",
+            "content": summaryPrompt,
+          }
+        ],
+                },
+                voice: {
+                  provider: "openai",
+      model: "gpt-4o-mini-tts",
+      speed: 1.5,
+      voiceId: "echo",
+      
+                },
+                firstMessage: firstMessageContent,
+              },
+              config: buttonConfig,
+            });
+      
+            vapiInstance.on('ready', function () {
+              console.log("Vapi SDK is ready. Auto-starting call...");
+              vapiInstance.start();
+            });
+      
+            vapiInstance.on('call-start', () => {
+              console.log('Voice conversation started');
+            });
+      
+            vapiInstance.on('call-end', () => {
+              console.log('Voice conversation ended');
+            });
+      
+            vapiInstance.on('speech-start', () => {
+              console.log('User started speaking');
+            });
+      
+            vapiInstance.on('speech-end', () => {
+              console.log('User stopped speaking');
+            });
+      
+            vapiInstance.on('message', (message) => {
+              if (message.type === 'transcript') {
+                console.log(`${message.role}: ${message.transcript}`);
+              } else if (message.type === 'function-call') {
+                console.log('Function called:', message.functionCall.name, message.functionCall.parameters);
+              } else if (message.type === 'function-result') {
+                console.log('Function result:', message.functionResult);
+              }
+            });
+      
+            vapiInstance.on('error', (error) => {
+              console.error('Voice widget error:', error);
+            });
+          };
+        })(document, "script");
+    })();
+</script>
+
+</body>
+</html>
+

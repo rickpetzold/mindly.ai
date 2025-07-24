@@ -1,0 +1,3044 @@
+{
+  "name": "Thoughts log input",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "file"
+            },
+            {
+              "name": "model",
+              "value": "gpt-4o-mini-transcribe"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -256,
+        304
+      ],
+      "id": "858a050d-2aa5-4e56-9120-d5498b7a4766",
+      "name": "Transcribe with OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "zVwq40DW8Esza0nT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-log-audio",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        304
+      ],
+      "id": "692ec36e-0048-478d-8b1a-8a1f02882e76",
+      "name": "Webhook for audio transcription",
+      "webhookId": "6a06f5e4-9105-4780-9840-9b7619a25647"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "apphA8EcNv4Hsdr4s",
+          "mode": "list",
+          "cachedResultName": "2Companion",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblHcWTZvJaCGhvSO",
+          "mode": "list",
+          "cachedResultName": "Dimension",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s/tblHcWTZvJaCGhvSO"
+        },
+        "filterByFormula": "={User ID} = '{{ $json['User ID'] }}'",
+        "options": {
+          "fields": [
+            "Name",
+            "1-line summary"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        416,
+        592
+      ],
+      "id": "d1737ebb-3f99-4f96-9091-8080163b1c9b",
+      "name": "Search dimensions",
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "RaC3QvBoQ336oiQw",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "18f68fbf-be61-4193-9fc9-358fda7a9516",
+              "name": "Dimension name",
+              "value": "={{ $json.Name }}",
+              "type": "string"
+            },
+            {
+              "id": "5170d76f-5916-4e32-9892-2681c2e0d93a",
+              "name": "Dimension 1-line summary",
+              "value": "={{ $json['1-line summary'] }}",
+              "type": "string"
+            },
+            {
+              "id": "a668e80b-bf30-495c-b29a-19912749e19c",
+              "name": "Dimension ID",
+              "value": "={{ $json['Dimension ID'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        592
+      ],
+      "id": "ff24e0b2-7fc3-4a9a-aea0-06bdc1015093",
+      "name": "Clean dimension variables"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {
+          "responseFormat": "json_object"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1184,
+        816
+      ],
+      "id": "4a361a91-7bb5-4ff1-be06-7bfdf611366d",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "zVwq40DW8Esza0nT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Final start variables').item.json['Thought text'] }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=# Role\n\nYour role is to understand the user message that contains a thought of the user and map to one of the dimensions, if it exists.\n\n# Context\n\nYou intervene as part of an app that helps users log all their thoughts. You're working on the step that's about looking at the previous dimensions that were identified amongst the previous logs of that user in their digital diary. To see if that new log is actually part of a dimension that already was identified, or if it's actually part of a new dimension that needs to be created.\n\n# Cases\n\n## Case 1, the log matches one of the dimensions that were previously identified based on the 1-line summary\n\nBased on the full list of dimensions shared later, if one of the dimensions matches perfectly this new log (that the user message contains), then return the exact ID of the corresponding dimension in the JSON, and leave the 2 other keys empty.\n\nExample:\n\n{\n  \"ID of existing dimension\": \"recXXXXXXX\",\n  \"Name of new dimension\": null,\n  \"1-line summary of new dimension\": null,\n  \"Type of new dimension\": null,\n}\n\n\n## Case 2, the log doesn't fit any of the existing identified dimensions and we need to create that new dimension\n\nBased on the full list of dimensions shared later, no dimension matches this new log (that the user message contains), we thus need to create this new dimension to store it in the user data we have.\nReturn the following JSON:\n\n{\n  \"ID of existing dimension\": null,\n  \"Name of new dimension\": \"Lorem ipsum dolor sir amet\",\n  \"1-line summary of new dimension\": \"Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi.\"\n  \"Type of new dimension\": \"Project\",\n}\n\n-> For the value of the key \"Name of new dimension\", give a 3 to 6 words concise title to that dimension, sentence case, no dot at the end.\nGood examples are:\nMy new job at Acme Corp\nBreaking up with Sarah\nChina trip 2025 with family\n\n-> For the value of the key \"1-line summary of new dimension\", give in one sentence a good overview of what this dimension is about.\n\n-> For the value of the key \"Type of new dimension\", set either \"Project\" or \"Area\". A project is something time related like a trip, a job idea and an Area is an area that's not really related to time but more timeless, for example improving some skills, becoming a better person, increasing some skills without a specific timeline.\n\n\n# Your output format as a JSON\n\nIn any case, your output format is a JSON looking like:\n\n{\n  \"ID of existing dimension\": \"recXXX\",\n  \"Name of new dimension\": \"Lorem ipsum dolor sir amet\",\n  \"1-line summary of new dimension\": \"Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi.\"\n}\n\n\n# All previously identified dimensions\n\nThis JSON contains a list of all dimensions that we have identified for that user. It contains the dimension name, a one-line summary, and the exact ID of each dimension.\n\n{{ JSON.stringify($json, null, 2) }}\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1088,
+        592
+      ],
+      "id": "bfe6ec99-1ed5-42da-ba5c-6852e4f888e2",
+      "name": "Dimensions management"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0672cc0f-1d3d-44c7-855d-e28d2084a4b6",
+              "name": "Thought text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "77819c18-bf81-434b-9d1a-763ee8070c23",
+              "name": "User ID",
+              "value": "={{ $('Webhook for audio transcription').item.json.body.userId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -32,
+        304
+      ],
+      "id": "acaa6d01-fab4-4efd-8335-76b506a65c5d",
+      "name": "Clean webhook variable"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "text-log-input",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        880
+      ],
+      "id": "cca9cfb9-0c76-44d3-801d-afb17b2ae2ed",
+      "name": "Webhook for text input",
+      "webhookId": "ae8a0b4a-07a9-4b1b-8336-c56b28deb01e"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0672cc0f-1d3d-44c7-855d-e28d2084a4b6",
+              "name": "Thought text",
+              "value": "={{ $json.body.text_log }}",
+              "type": "string"
+            },
+            {
+              "id": "77819c18-bf81-434b-9d1a-763ee8070c23",
+              "name": "User ID",
+              "value": "={{ $json.body.userId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -32,
+        880
+      ],
+      "id": "9fbc289d-83b9-4a91-8cf5-7613135064ba",
+      "name": "Clean webhook variable1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f55dd285-1a17-4a5d-8606-2961c192f21c",
+              "name": "Thought text",
+              "value": "={{ $json['Thought text'] }}",
+              "type": "string"
+            },
+            {
+              "id": "06c9d13f-3986-4634-a187-507dfa3938bd",
+              "name": "User ID",
+              "value": "={{ $json['User ID'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        192,
+        592
+      ],
+      "id": "4cbfa890-6a90-4a91-867c-cedc644d88a2",
+      "name": "Final start variables"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "Dimension ID"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2896,
+        1312
+      ],
+      "id": "49bcc428-7906-4553-9df5-0b73b0d23750",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dca3a62c-6d93-4a1b-9210-bcf045730206",
+              "name": "Title",
+              "value": "={{ $json.Title }}",
+              "type": "string"
+            },
+            {
+              "id": "26e666da-09c1-4676-ae87-92e858f76fe3",
+              "name": "Log date",
+              "value": "={{ $json['Log date'] }}",
+              "type": "string"
+            },
+            {
+              "id": "eea8b7e0-dbe3-4517-b84c-364187803fc6",
+              "name": "Full log",
+              "value": "={{ $json['Full log'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2000,
+        1216
+      ],
+      "id": "4bfcccb5-5510-46df-b062-eea09f9edd78",
+      "name": "Clean data"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "apphA8EcNv4Hsdr4s",
+          "mode": "list",
+          "cachedResultName": "2Companion",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblGaeUH5omhU2sxm",
+          "mode": "list",
+          "cachedResultName": "Logs",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s/tblGaeUH5omhU2sxm"
+        },
+        "filterByFormula": "={Dimension ID} = '{{ $json['Dimension ID'] }}'",
+        "options": {
+          "fields": [
+            "Title",
+            "Full log",
+            "Log date"
+          ]
+        },
+        "sort": {
+          "property": [
+            {
+              "field": "Log date"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -2224,
+        1216
+      ],
+      "id": "e569517c-deea-4341-a332-c61585c45345",
+      "name": "Search logs from this dimension",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "RaC3QvBoQ336oiQw",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "All logs",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -1776,
+        1216
+      ],
+      "id": "afb97f8f-6686-4380-a65e-920cc67ee08d",
+      "name": "Aggregate logs"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "All dimentions of that user",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        864,
+        592
+      ],
+      "id": "2a5e1118-a21d-44fd-b0a7-8b177bf57379",
+      "name": "Aggregate dimensions data"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1456,
+        1440
+      ],
+      "id": "59d27a8e-f6be-469e-b014-6ceefebd3734",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "zVwq40DW8Esza0nT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "base": {
+          "__rl": true,
+          "value": "apphA8EcNv4Hsdr4s",
+          "mode": "list",
+          "cachedResultName": "2Companion",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblHcWTZvJaCGhvSO",
+          "mode": "list",
+          "cachedResultName": "Dimension",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s/tblHcWTZvJaCGhvSO"
+        },
+        "id": "={{ $json.ID }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -2448,
+        1216
+      ],
+      "id": "d2390faf-1935-4ecc-87fa-e57e382b2a46",
+      "name": "Get the dimension",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "RaC3QvBoQ336oiQw",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Dimension name: {{ $('Get the dimension').item.json.Name }}\n\nData about all logs from this dimension:\n\n{{ JSON.stringify($json, null, 2) }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=# Role\n\nThe user message contains information about a dimension of their life that has been identified as part of their personal journaling and your role is to return a very insightful elements of that dimension.\n\n# What the user message contains\n\nThe user message contains the name of that dimension of their life that has been identified as part of their journaling process, as well as all the logs of the journal that have been gathered and that are part of this dimension. For the logs, you will get a list of all the logs with their title, the dates that were captured, and the full log. \n\n# How to craft the perfect digest\n\nThe perfect digest starts with two- three sentences to introduce that dimension.\nIt then contains a timeline of the evolution of the thoughts and point of view and the different elements that have been logged to give an overview of how things evolve over time and at what date.\nThen, it contains part about the potential next steps and directions that this can take.\nLastly, there are some questions for further exploration that can help the user process and find ways to progress on this dimension.\n\n=> The digest is formatted in markdown and each section has a H2 ## title."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1552,
+        1216
+      ],
+      "id": "193a97d2-2f51-4628-9a47-9adca8b6705c",
+      "name": "Generate dimension digest"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "apphA8EcNv4Hsdr4s",
+          "mode": "list",
+          "cachedResultName": "2Companion",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblHcWTZvJaCGhvSO",
+          "mode": "list",
+          "cachedResultName": "Dimension",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s/tblHcWTZvJaCGhvSO"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Clean ID').item.json.ID }}",
+            "Digest": "={{ $json.text }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Logs",
+              "displayName": "Logs",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Count (Logs)",
+              "displayName": "Count (Logs)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Type",
+              "displayName": "Type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Area",
+                  "value": "Area"
+                },
+                {
+                  "name": "Project",
+                  "value": "Project"
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "open",
+                  "value": "open"
+                },
+                {
+                  "name": "archived",
+                  "value": "archived"
+                },
+                {
+                  "name": "",
+                  "value": ""
+                }
+              ],
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "User",
+              "displayName": "User",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "User ID",
+              "displayName": "User ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "1-line summary",
+              "displayName": "1-line summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Digest",
+              "displayName": "Digest",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Dimension ID",
+              "displayName": "Dimension ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -1152,
+        1216
+      ],
+      "id": "787ec566-8e2b-46a8-ba0b-b0492e9ae3db",
+      "name": "Import digest",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "RaC3QvBoQ336oiQw",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "image-log-input",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        496
+      ],
+      "id": "f03bc84f-680e-44f6-b11e-b85e74d2a1c4",
+      "name": "Webhook1",
+      "webhookId": "ae8a0b4a-07a9-4b1b-8336-c56b28deb01e"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "CHATGPT-4O-LATEST"
+        },
+        "text": "Describe this image and generate a summary containing the details of it.",
+        "inputType": "base64",
+        "binaryPropertyName": "file",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -256,
+        496
+      ],
+      "id": "d978f864-dce6-4343-95e9-3ce4d13f581c",
+      "name": "Analyze image",
+      "credentials": {
+        "openAiApi": {
+          "id": "sQ9TKTJSa7s5gdZE",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0672cc0f-1d3d-44c7-855d-e28d2084a4b6",
+              "name": "Thought text",
+              "value": "=Image Caption: \n{{ $('Webhook1').item.json.body.caption }} \n\n\nImage Description: \n{{ $json.content }}",
+              "type": "string"
+            },
+            {
+              "id": "77819c18-bf81-434b-9d1a-763ee8070c23",
+              "name": "User ID",
+              "value": "={{ $('Webhook1').item.json.body.userId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -32,
+        496
+      ],
+      "id": "8e340cda-d6ee-4db8-b5e0-18abadcfde87",
+      "name": "Clean webhook variable2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "78c6e089-0638-414a-8205-1d6d67564b65",
+              "leftValue": "={{ $json.Intent }}",
+              "rightValue": "post",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -32,
+        688
+      ],
+      "id": "d4ed219e-d86e-4cb2-8e8f-fa2036da9679",
+      "name": "Post Request?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0672cc0f-1d3d-44c7-855d-e28d2084a4b6",
+              "name": "Thought text",
+              "value": "=Here is the query from the user:\n{{ $json.body.message.toolCallList[0].function.arguments.summary }}",
+              "type": "string"
+            },
+            {
+              "id": "77819c18-bf81-434b-9d1a-763ee8070c23",
+              "name": "User ID",
+              "value": "={{ $json.body.message.toolCallList[0].function.arguments.userId }}",
+              "type": "string"
+            },
+            {
+              "id": "19b1edb2-38b7-4580-9a0d-6badaa765ac4",
+              "name": "Intent",
+              "value": "={{ $json.body.message.toolCallList[0].function.arguments.intent }}",
+              "type": "string"
+            },
+            {
+              "id": "25eda18f-1dc9-46dd-8bc7-1eb257df398e",
+              "name": "Message history",
+              "value": "=\n{{$json.body.message.artifact.messages.flatMap( tool => tool.toolCalls === undefined ? JSON.stringify(({role: tool.role, message: tool.message})): [])}}\n\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -256,
+        688
+      ],
+      "id": "23470d59-ea06-40d6-aa27-cd6021e5d99e",
+      "name": "Parse Vapi"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "post-query",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        688
+      ],
+      "id": "9833f018-f3f2-422b-a53e-935783aee263",
+      "name": "Webhook Vapi",
+      "webhookId": "dc27d8b2-4699-4f1e-ba29-0b90827c3781"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {
+          "responseFormat": "json_object"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1520,
+        816
+      ],
+      "id": "82ad9748-6880-467a-86f8-a84977d79cfe",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "zVwq40DW8Esza0nT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Final start variables').item.json['Thought text'] }}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=The user message is a log in a digital diary and your role is to return a JSON that contains a concise title for that log (sentence case, no dot at the end, 3 to 8 words), and one summary of that log in one sentence with good details but concise.\n\nExample JSON output:\n\n{\n  \"Log title\": \"Lorem ipsum dolor sit amet\",\n  \"Log summary\": \"Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\"\n}\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1488,
+        592
+      ],
+      "id": "b2d77761-df89-4d1a-84c3-d46e2381828d",
+      "name": "Summarise log"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"Log title\": \"Lorem ipsum dolor sit amet\",\n  \"Log summary\": \"Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.\"\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1648,
+        816
+      ],
+      "id": "9c403c6d-97a1-4a10-b07c-d22a17a8cbdc",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "78c6e089-0638-414a-8205-1d6d67564b65",
+              "leftValue": "={{ $('Dimensions management').item.json.output?.['ID of existing dimension'] ?? $('Dimensions management').item.json?.['ID of existing dimension'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1888,
+        592
+      ],
+      "id": "69674948-a484-43ec-ab47-146a8a596ac2",
+      "name": "Existing dimension?"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "apphA8EcNv4Hsdr4s",
+          "mode": "list",
+          "cachedResultName": "2Companion",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblGaeUH5omhU2sxm",
+          "mode": "list",
+          "cachedResultName": "Logs",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s/tblGaeUH5omhU2sxm"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Log date": "={{ $now.toISO() }}",
+            "Users": "={{ [$('Final start variables').item.json['User ID'] ]}}",
+            "Dimension": "={{ [ $('Dimensions management').item.json.output?.['ID of existing dimension'] ?? $('Dimensions management').item.json?.['ID of existing dimension'] ] }}",
+            "Summary": "={{ $('Summarise log').item.json.output['Log summary'] }}",
+            "Title": "={{ $('Summarise log').item.json.output['Log title'] }}",
+            "Full log": "={{ $('Final start variables').item.json['Thought text'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Full log",
+              "displayName": "Full log",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Log date",
+              "displayName": "Log date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Dimension",
+              "displayName": "Dimension",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Users",
+              "displayName": "Users",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "User ID",
+              "displayName": "User ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Log ID",
+              "displayName": "Log ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2208,
+        400
+      ],
+      "id": "bb8b03c5-9fd9-46da-8cdf-c65488b1cd10",
+      "name": "Store the log",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "RaC3QvBoQ336oiQw",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "apphA8EcNv4Hsdr4s",
+          "mode": "list",
+          "cachedResultName": "2Companion",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblHcWTZvJaCGhvSO",
+          "mode": "list",
+          "cachedResultName": "Dimension",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s/tblHcWTZvJaCGhvSO"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $('Dimensions management').item.json.output?.['Name of new dimension'] ?? $('Dimensions management').item.json?.['Name of new dimension'] }}",
+            "Status": "open",
+            "1-line summary": "={{ $('Dimensions management').item.json.output?.['1-line summary of new dimension'] ?? $('Dimensions management').item.json?.['1-line summary of new dimension'] }}",
+            "User": "={{ [$('Final start variables').item.json['User ID'] ]}}",
+            "Type": "={{ $('Dimensions management').item.json['Type of new dimension'] }}",
+            "Cover image": "={{ [ { \"url\": $json.output, \"filename\": \"cover-image.webp\" } ] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Logs",
+              "displayName": "Logs",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Count (Logs)",
+              "displayName": "Count (Logs)",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Type",
+              "displayName": "Type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Area",
+                  "value": "Area"
+                },
+                {
+                  "name": "Project",
+                  "value": "Project"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Cover image",
+              "displayName": "Cover image",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "open",
+                  "value": "open"
+                },
+                {
+                  "name": "archived",
+                  "value": "archived"
+                },
+                {
+                  "name": "",
+                  "value": ""
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "User",
+              "displayName": "User",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "User ID",
+              "displayName": "User ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "1-line summary",
+              "displayName": "1-line summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Digest",
+              "displayName": "Digest",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Dimension ID",
+              "displayName": "Dimension ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2736,
+        688
+      ],
+      "id": "f80b5d22-3817-4ee2-a83b-1c63492138fb",
+      "name": "Create new dimension",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "RaC3QvBoQ336oiQw",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "apphA8EcNv4Hsdr4s",
+          "mode": "list",
+          "cachedResultName": "2Companion",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblGaeUH5omhU2sxm",
+          "mode": "list",
+          "cachedResultName": "Logs",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s/tblGaeUH5omhU2sxm"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Log date": "={{ $now.toISO() }}",
+            "Users": "={{ [$('Final start variables').item.json['User ID'] ]}}",
+            "Dimension": "={{ [$json.id ]}}",
+            "Summary": "={{ $('Summarise log').item.json.output['Log summary'] }}",
+            "Title": "={{ $('Summarise log').item.json.output['Log title'] }}",
+            "Full log": "={{ $('Final start variables').item.json['Thought text'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Full log",
+              "displayName": "Full log",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Log date",
+              "displayName": "Log date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Dimension",
+              "displayName": "Dimension",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Users",
+              "displayName": "Users",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "User ID",
+              "displayName": "User ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Log ID",
+              "displayName": "Log ID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2960,
+        688
+      ],
+      "id": "1822baea-439e-42f6-b219-209a132bb791",
+      "name": "Store the log1",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "RaC3QvBoQ336oiQw",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "2tiv5I7gTaK7JH3Y",
+          "mode": "list",
+          "cachedResultName": "2Companion — Thoughts log input"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Dimension ID": "={{ $('Create new dimension').item.json.id }}"
+          },
+          "matchingColumns": [
+            "Dimension ID"
+          ],
+          "schema": [
+            {
+              "id": "Dimension ID",
+              "displayName": "Dimension ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        3184,
+        688
+      ],
+      "id": "85a95af5-9dde-426c-bd7b-653289cfbf10",
+      "name": "Execute Workflow"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "2tiv5I7gTaK7JH3Y",
+          "mode": "list",
+          "cachedResultName": "2Companion — Thoughts log input"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Dimension ID": "={{ $('Dimensions management1').item.json['ID of existing dimension'] }}"
+          },
+          "matchingColumns": [
+            "Dimension ID"
+          ],
+          "schema": [
+            {
+              "id": "Dimension ID",
+              "displayName": "Dimension ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        2512,
+        400
+      ],
+      "id": "3eb9bb14-da90-4bd8-890f-8a9c18d2e2a9",
+      "name": "Execute Workflow1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Dimension name:\n{{ $('Dimensions management').item.json.output?.['Name of new dimension'] ?? $('Dimensions management').item.json?.['Name of new dimension'] }}\n\n\nDimension description:\n{{ $('Dimensions management').item.json.output?.['1-line summary of new dimension'] ?? $('Dimensions management').item.json?.['1-line summary of new dimension'] }}\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Your task is to generate a prompt for an AI image generator (Recraft V3, Grain style). Your output must follow these critical rules:\n\n1.  **Strict 500 Character Limit:** The entire output prompt must be under 500 characters. Aim for 400-450 characters to be safe.\n2.  **Keyword-Focused Format:** Do NOT write full sentences. Use a comma-separated list of descriptive keywords and short phrases to describe the scene. This is essential for character efficiency.\n3.  **Content Only:** The 'Grain' style is automatic. Do NOT mention any style, medium, or texture (e.g., \"illustration\", \"grainy\", \"dreamy\", \"painting\"). Focus exclusively on the content, composition, and lighting.\n\n**Your Process:**\nIdentify elements that would be interesting to visualise to represent the life dimension that the user shared.\n- **Construct the Scene:** Describe the composition (e.g., \"a giant clock floating over a calm sea\"), the lighting (\"soft morning light\", \"eerie glow from below\"), and the color palette (\"muted pastels\", \"deep blues and purples\") that matches the dream's atmosphere.\n\n**Final Output:**\n- Your output must be a single, continuous block of text.\n- Do not add any introductory text like \"Here is your prompt:\".\n- Ensure the content is 'safe for work'."
+            }
+          ]
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        2112,
+        688
+      ],
+      "id": "1d46395e-4d32-45f8-a119-0857c6aa45a9",
+      "name": "Generate pre-prompt for image"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.replicate.com/v1/models/recraft-ai/recraft-v3/predictions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "wait"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={\n  \"input\": {\n    \"prompt\": \"{{ $json.text.replace(/\\n/g, '\\\\n').replace(/\\r/g, '\\\\n').replace(/\"/g, \"'\") }}\",\n\"style\": \"digital_illustration/grain\",\n    \"aspect_ratio\": \"4:3\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2512,
+        688
+      ],
+      "id": "d3c1be27-6642-4aa0-a8b7-8cd57113e7c0",
+      "name": "HD image generation",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "SmjcRXaRCNlYzz39",
+          "name": "Replicate image gen"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2208,
+        912
+      ],
+      "id": "77806f14-76a6-4001-a6c1-347c8657dc13",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "zVwq40DW8Esza0nT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -3120,
+        128
+      ],
+      "id": "294ec76e-1757-4328-b1fc-65e112a9c4d1",
+      "name": "Telegram Trigger",
+      "webhookId": "c2c0c3f3-a4d1-4ccb-af97-7269b0debcc2",
+      "credentials": {
+        "telegramApi": {
+          "id": "oENu5emMggKxCPPU",
+          "name": "2companion Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "17989eb0-feca-4631-b5c8-34b1d4a6c72b",
+              "name": "image_file_id",
+              "type": "string",
+              "value": "={{ $('Telegram Trigger').item.json.message.photo.last().file_id }}"
+            },
+            {
+              "id": "9317d7ae-dffd-4b1f-9a9c-b3cc4f1e0dd3",
+              "name": "caption",
+              "type": "string",
+              "value": "={{ $('Telegram Trigger').item.json.message.caption }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f0a4180a-f153-4ae5-a09c-0710ccc6c05d",
+      "name": "Image Schema",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -2224,
+        304
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Telegram Trigger').item.json.message.voice.file_id }}"
+      },
+      "id": "60546761-42be-4322-8f63-48a503f63e59",
+      "name": "Get Audio File",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        -1552,
+        -96
+      ],
+      "typeVersion": 1.2,
+      "webhookId": "8f4d5e8a-20ed-41d9-980d-b246f016fb67",
+      "credentials": {
+        "telegramApi": {
+          "id": "oENu5emMggKxCPPU",
+          "name": "2companion Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.image_file_id }}"
+      },
+      "id": "cf2daa79-e8bd-4dae-81a4-6d7553bb50ac",
+      "name": "Get Image",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        -2000,
+        304
+      ],
+      "typeVersion": 1.2,
+      "webhookId": "e16021eb-13da-45fc-a6d5-5df61ee70027",
+      "credentials": {
+        "telegramApi": {
+          "id": "oENu5emMggKxCPPU",
+          "name": "2companion Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "text": "Describe this image",
+        "inputType": "base64",
+        "options": {}
+      },
+      "id": "323844cc-4230-46e1-9db3-422dcd71ff20",
+      "name": "Analyze Image",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        -1328,
+        304
+      ],
+      "typeVersion": 1.6,
+      "credentials": {
+        "openAiApi": {
+          "id": "sQ9TKTJSa7s5gdZE",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data",
+        "options": {
+          "fileName": "={{ $json.result.file_path }}"
+        }
+      },
+      "id": "3060ae7e-a32f-47ba-81de-09b30cbeabac",
+      "name": "Convert to Image File",
+      "type": "n8n-nodes-base.convertToFile",
+      "position": [
+        -1552,
+        304
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "id": "2f044ce7-8e4e-4914-8a58-c3fffb5c01cf",
+      "name": "Extract from File to Base64",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        -1776,
+        304
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.voice }}",
+                    "rightValue": "",
+                    "id": "b5d9f703-2a1b-4942-906c-7a7d1404a4d7"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "342f0883-d959-44a2-b80d-379e39c76218",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.text }}",
+                    "rightValue": ""
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "ded3a600-f861-413a-8892-3fc5ea935ecb",
+                    "operator": {
+                      "type": "array",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $('Telegram Trigger').item.json.message.photo }}",
+                    "rightValue": ""
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "image"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "a23bb74d-a075-4862-98f5-6e8fdac0786c",
+      "name": "Message Router",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        -2448,
+        80
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bffc2c1f-990e-4396-b59a-ab82b843e061",
+              "name": "preset_user_message",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1104,
+        -96
+      ],
+      "id": "e6159451-ab60-4e91-800e-7469f54914e7",
+      "name": "Preset audio message"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b37b48ba-8fef-4e6c-bbca-73e6c2e1e0a8",
+              "name": "preset_user_message",
+              "type": "string",
+              "value": "={{ $('Telegram Trigger').item.json.message.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "86bfcf17-663c-426a-bc05-38067168f6e4",
+      "name": "Preset text message",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        -1104,
+        112
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7db97ffc-b1eb-422e-8bb1-90eea55c7aa2",
+              "name": "preset_user_message",
+              "value": "=This message contains an image.\n\nHere is the image caption:\n{{ $('Telegram Trigger').item.json.message.caption }}\n\nAnd here is the image description:\n{{ $json.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1104,
+        304
+      ],
+      "id": "621f356f-aaa4-4447-8441-ce81538bf78b",
+      "name": "Preset image message"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7db97ffc-b1eb-422e-8bb1-90eea55c7aa2",
+              "name": "Thought text",
+              "value": "={{ $json.preset_user_message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -880,
+        16
+      ],
+      "id": "c4dec856-c520-4406-aa6a-62b4cf514596",
+      "name": "Consolidate final message"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -1328,
+        -96
+      ],
+      "id": "5b0ae41d-296b-45de-9023-8b289ee739d9",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "openAiApi": {
+          "id": "sQ9TKTJSa7s5gdZE",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "apphA8EcNv4Hsdr4s",
+          "mode": "list",
+          "cachedResultName": "2Companion",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbljcDWT5VQEdc3l4",
+          "mode": "list",
+          "cachedResultName": "Users",
+          "cachedResultUrl": "https://airtable.com/apphA8EcNv4Hsdr4s/tbljcDWT5VQEdc3l4"
+        },
+        "filterByFormula": "={Telegram name} = '{{ $json.message.from.username }}'",
+        "options": {
+          "fields": [
+            "User ID"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        -2896,
+        128
+      ],
+      "id": "8a09f043-1a00-413d-b7a6-eefad3171dd6",
+      "name": "Search telegram user",
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "RaC3QvBoQ336oiQw",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a4b9d775-f26f-4007-a672-51b4efcbfbf5",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2672,
+        128
+      ],
+      "id": "6edab008-3555-4010-956a-595f6100e9ba",
+      "name": "Existing user?"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "=You haven't linked your Telegram name to your 2Companion account.\nLog in to https://2companion.softr.app/ and check your account settings to add \"<b>{{ $('Telegram Trigger').item.json.message.from.username }}</b>\" as your Telegram user name!",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2448,
+        336
+      ],
+      "id": "ea89c5ca-eacf-46e0-a184-9d1a15b0af8c",
+      "name": "Send a text message",
+      "webhookId": "091fa9ae-790a-4f7e-86c2-b13c184951bc",
+      "credentials": {
+        "telegramApi": {
+          "id": "oENu5emMggKxCPPU",
+          "name": "2companion Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -256,
+        16
+      ],
+      "id": "e3578525-fc5a-4bbc-bdd8-d9685e50ea05",
+      "name": "Send a text message1",
+      "webhookId": "091fa9ae-790a-4f7e-86c2-b13c184951bc",
+      "credentials": {
+        "telegramApi": {
+          "id": "oENu5emMggKxCPPU",
+          "name": "2companion Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0672cc0f-1d3d-44c7-855d-e28d2084a4b6",
+              "name": "Thought text",
+              "value": "={{ $('Consolidate final message').item.json.final_user_message }}",
+              "type": "string"
+            },
+            {
+              "id": "77819c18-bf81-434b-9d1a-763ee8070c23",
+              "name": "User ID",
+              "value": "={{ $('Search telegram user').item.json['User ID'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -32,
+        16
+      ],
+      "id": "7b79ef16-4a88-4a43-a154-a39990588eb8",
+      "name": "Clean telegram variable"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -560,
+        128
+      ],
+      "id": "2858309b-b3eb-4672-88d2-ff552336fe83",
+      "name": "OpenAI Chat Model4",
+      "credentials": {
+        "openAiApi": {
+          "id": "sQ9TKTJSa7s5gdZE",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json['Thought text'] }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=The user message contains a though that the user logged in their journal and your role is to acknoledge the fact that this though got logged by mentioning it as a quick summary.\n\nFor example:\n\"Got it, I've just logged your thought about ...\"\nor\n\"Your project to ... has been logged!\"\n\nYou understand that it should be concise."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -656,
+        -96
+      ],
+      "id": "ddd7a263-c111-4abb-a78b-c4ffb1fa0ca8",
+      "name": "Summary and confirmation"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3120,
+        1120
+      ],
+      "id": "5ae2d9cd-eeeb-4cc6-b18e-38cb5312a6fc",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9c5c9152-9e31-4161-a9c2-d6098ce1b8b8",
+              "name": "Dimension ID",
+              "value": "recfaGLl5Fkt9aa3x",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2896,
+        1120
+      ],
+      "id": "c9c7c878-4441-412f-b96e-c6effab8fd51",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "72b23117-bb2a-46dc-9e99-8a6f8a51ecc8",
+              "name": "ID",
+              "value": "={{ $json['Dimension ID'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2672,
+        1216
+      ],
+      "id": "c1070b58-750a-423c-9f6f-bf4426a0ff63",
+      "name": "Clean ID"
+    }
+  ],
+  "pinData": {
+    "Webhook for audio transcription": [
+      {
+        "json": {
+          "headers": {
+            "host": "twocompanion.app.n8n.cloud",
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+            "content-length": "123143",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "en-GB,en-US;q=0.9,en;q=0.8,fr-FR;q=0.7,fr;q=0.6,de;q=0.5",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "217.9.109.94",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "DE",
+            "cf-ray": "961b35f7a2304d3d-FRA",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "multipart/form-data; boundary=----WebKitFormBoundarynAQpNmFwZ0z7m0zS",
+            "origin": "https://2companion.softr.app",
+            "priority": "u=1, i",
+            "referer": "https://2companion.softr.app/",
+            "sec-ch-ua": "\"Google Chrome\";v=\"137\", \"Chromium\";v=\"137\", \"Not/A)Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"macOS\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "x-forwarded-for": "217.9.109.94, 172.69.150.92",
+            "x-forwarded-host": "twocompanion.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-71-c76b59f55-v64cs",
+            "x-is-trusted": "yes",
+            "x-real-ip": "217.9.109.94"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "userId": "recykwDWfFuasgENB"
+          },
+          "webhookUrl": "https://twocompanion.app.n8n.cloud/webhook/new-log-audio",
+          "executionMode": "production"
+        }
+      }
+    ],
+    "Webhook for text input": [
+      {
+        "json": {
+          "headers": {
+            "host": "twocompanion.app.n8n.cloud",
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+            "content-length": "97",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "en-GB,en-US;q=0.9,en;q=0.8,fr-FR;q=0.7,fr;q=0.6,de;q=0.5",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "217.9.109.94",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "DE",
+            "cf-ray": "961b7b0b94badbab-FRA",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "application/json",
+            "origin": "https://2companion.softr.app",
+            "priority": "u=1, i",
+            "referer": "https://2companion.softr.app/",
+            "sec-ch-ua": "\"Google Chrome\";v=\"137\", \"Chromium\";v=\"137\", \"Not/A)Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"macOS\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "x-forwarded-for": "217.9.109.94, 172.71.144.7",
+            "x-forwarded-host": "twocompanion.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-71-c76b59f55-6xbcs",
+            "x-is-trusted": "yes",
+            "x-real-ip": "217.9.109.94"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "text_log": "I think i don't want to be friend with thomas anymore",
+            "userId": "recykwDWfFuasgENB"
+          },
+          "webhookUrl": "https://twocompanion.app.n8n.cloud/webhook/text-log-input",
+          "executionMode": "production"
+        }
+      }
+    ],
+    "Webhook1": [
+      {
+        "json": {
+          "headers": {
+            "host": "twocompanion.app.n8n.cloud",
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15",
+            "content-length": "88300",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "accept-language": "zh-CN,zh-Hans;q=0.9",
+            "cdn-loop": "cloudflare; loops=1; subreqs=1",
+            "cf-connecting-ip": "217.9.109.94",
+            "cf-ew-via": "15",
+            "cf-ipcountry": "DE",
+            "cf-ray": "961ba38935c24d9c-FRA",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "cf-worker": "n8n.cloud",
+            "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryup6YReamoKwNgQvm",
+            "origin": "https://2companion.softr.app",
+            "referer": "https://2companion.softr.app/",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "x-forwarded-for": "217.9.109.94, 172.69.150.158",
+            "x-forwarded-host": "twocompanion.app.n8n.cloud",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "traefik-prod-users-gwc-71-c76b59f55-jdgzl",
+            "x-is-trusted": "yes",
+            "x-real-ip": "217.9.109.94"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "caption": "This is me I guess",
+            "userId": "recykwDWfFuasgENB"
+          },
+          "webhookUrl": "https://twocompanion.app.n8n.cloud/webhook/image-log-input",
+          "executionMode": "production"
+        }
+      }
+    ],
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "Dimension ID": "recLy8kqo5ieFBnIh"
+        }
+      }
+    ],
+    "Telegram Trigger": [
+      {
+        "json": {
+          "update_id": 604110414,
+          "message": {
+            "message_id": 22,
+            "from": {
+              "id": 5912642416,
+              "is_bot": false,
+              "first_name": "Guillaume",
+              "last_name": "Duvernay",
+              "username": "Guillaumeduvernay",
+              "language_code": "en"
+            },
+            "chat": {
+              "id": 5912642416,
+              "first_name": "Guillaume",
+              "last_name": "Duvernay",
+              "username": "Guillaumeduvernay",
+              "type": "private"
+            },
+            "date": 1753005950,
+            "voice": {
+              "duration": 4,
+              "mime_type": "audio/ogg",
+              "file_id": "AwACAgQAAxkBAAMWaHy_fpvJRY5rxa73CSYw3-DTFLQAAqgXAAJzbOhTH9fpRvThH3w2BA",
+              "file_unique_id": "AgADqBcAAnNs6FM",
+              "file_size": 90431
+            }
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Transcribe with OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Clean webhook variable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook for audio transcription": {
+      "main": [
+        [
+          {
+            "node": "Transcribe with OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search dimensions": {
+      "main": [
+        [
+          {
+            "node": "Clean dimension variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean dimension variables": {
+      "main": [
+        [
+          {
+            "node": "Aggregate dimensions data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Dimensions management",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dimensions management": {
+      "main": [
+        [
+          {
+            "node": "Summarise log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean webhook variable": {
+      "main": [
+        [
+          {
+            "node": "Final start variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook for text input": {
+      "main": [
+        [
+          {
+            "node": "Clean webhook variable1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean webhook variable1": {
+      "main": [
+        [
+          {
+            "node": "Final start variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Final start variables": {
+      "main": [
+        [
+          {
+            "node": "Search dimensions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Clean ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search logs from this dimension": {
+      "main": [
+        [
+          {
+            "node": "Clean data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean data": {
+      "main": [
+        [
+          {
+            "node": "Aggregate logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate dimensions data": {
+      "main": [
+        [
+          {
+            "node": "Dimensions management",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate logs": {
+      "main": [
+        [
+          {
+            "node": "Generate dimension digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate dimension digest",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get the dimension": {
+      "main": [
+        [
+          {
+            "node": "Search logs from this dimension",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate dimension digest": {
+      "main": [
+        [
+          {
+            "node": "Import digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Analyze image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "Clean webhook variable2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean webhook variable2": {
+      "main": [
+        [
+          {
+            "node": "Final start variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Vapi": {
+      "main": [
+        [
+          {
+            "node": "Post Request?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post Request?": {
+      "main": [
+        [
+          {
+            "node": "Final start variables",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Webhook Vapi": {
+      "main": [
+        [
+          {
+            "node": "Parse Vapi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summarise log",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarise log": {
+      "main": [
+        [
+          {
+            "node": "Existing dimension?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Summarise log",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existing dimension?": {
+      "main": [
+        [
+          {
+            "node": "Store the log",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate pre-prompt for image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store the log": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create new dimension": {
+      "main": [
+        [
+          {
+            "node": "Store the log1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store the log1": {
+      "main": [
+        [
+          {
+            "node": "Execute Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate pre-prompt for image": {
+      "main": [
+        [
+          {
+            "node": "HD image generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HD image generation": {
+      "main": [
+        [
+          {
+            "node": "Create new dimension",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate pre-prompt for image",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search telegram user",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Schema": {
+      "main": [
+        [
+          {
+            "node": "Get Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Audio File": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Image": {
+      "main": [
+        [
+          {
+            "node": "Extract from File to Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Image": {
+      "main": [
+        [
+          {
+            "node": "Preset image message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to Image File": {
+      "main": [
+        [
+          {
+            "node": "Analyze Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File to Base64": {
+      "main": [
+        [
+          {
+            "node": "Convert to Image File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message Router": {
+      "main": [
+        [
+          {
+            "node": "Get Audio File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preset text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Image Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preset audio message": {
+      "main": [
+        [
+          {
+            "node": "Consolidate final message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preset text message": {
+      "main": [
+        [
+          {
+            "node": "Consolidate final message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preset image message": {
+      "main": [
+        [
+          {
+            "node": "Consolidate final message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Preset audio message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search telegram user": {
+      "main": [
+        [
+          {
+            "node": "Existing user?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existing user?": {
+      "main": [
+        [
+          {
+            "node": "Message Router",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidate final message": {
+      "main": [
+        [
+          {
+            "node": "Summary and confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        [
+          {
+            "node": "Clean telegram variable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean telegram variable": {
+      "main": [
+        [
+          {
+            "node": "Final start variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summary and confirmation",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summary and confirmation": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Clean ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clean ID": {
+      "main": [
+        [
+          {
+            "node": "Get the dimension",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "38bd3c25-34c2-4601-8cf9-676487d9fc6b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "70a3d09db6a82b183a295ca42d7a79935813af1750cf73d1926974ded643c31a"
+  },
+  "id": "2tiv5I7gTaK7JH3Y",
+  "tags": []
+}
