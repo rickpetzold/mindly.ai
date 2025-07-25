@@ -7,14 +7,11 @@ const PORT = process.env.PORT || 3001;
 
 // CORS middleware
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url} from ${req.headers.origin}`);
-  
   res.header('Access-Control-Allow-Origin', 'https://whisper2.preview.softr.app');
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
   if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS request');
     return res.sendStatus(200);
   }
   next();
@@ -55,6 +52,9 @@ const getWebhookUrl = (endpoint) => {
 
 // Proxy endpoints
 app.post("/api/vapi/start", async (req, res) => {
+  console.log(`${req.method} ${req.url} from ${req.headers.origin}`);
+  console.log('Request headers:', req.headers);
+  
   try {
     const { userId } = req.body;
 
