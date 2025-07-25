@@ -14,8 +14,7 @@ app.use(cors({
     'https://whisper2.softr.app',
     /\.softr\.app$/,
     /\.preview\.softr\.app$/
-  ],
-  credentials: true
+  ]
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
