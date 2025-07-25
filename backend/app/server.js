@@ -1,26 +1,9 @@
 const express = require("express");
-const cors = require("cors");
 const fetch = require("node-fetch");
 require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
-// Middleware
-app.use(cors({
-  origin: [
-    'http://localhost:3001',
-    'https://whisper2.preview.softr.app',
-    'https://whisper2.softr.app',
-    /\.softr\.app$/,
-    /\.preview\.softr\.app$/
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
-
-// Handle preflight requests
-app.options('*', cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
