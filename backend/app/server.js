@@ -27,14 +27,11 @@ app.options('*', (req, res) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from frontend
-app.use(express.static("frontend/src"));
-
 // Environment variables (keep these secret!)
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const VAPI_ASSISTANT_ID = process.env.VAPI_ASSISTANT_ID;
 const N8N_WEBHOOK_BASE = process.env.N8N_WEBHOOK_BASE;
-const ENVIRONMENT = process.env.ENVIRONMENT || 'deployed';
+const ENVIRONMENT = process.env.ENVIRONMENT || 'local';
 
 // Determine webhook URLs based on environment
 const getWebhookUrl = (endpoint) => {
