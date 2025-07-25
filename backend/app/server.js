@@ -1,5 +1,6 @@
 const express = require("express");
 const fetch = require("node-fetch");
+const cors = require("cors");
 
 // Load config.env only in local development
 if (!process.env.VERCEL) {
@@ -9,25 +10,20 @@ if (!process.env.VERCEL) {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS middleware
-app.use((req, res, next) => {
-  const allowedOrigins = ['https://whisper2.preview.softr.app', 'https://whisper2.softr.app'];
-  const origin = req.headers.origin;
+const allowedOrigins = ['https://whisper2.preview.softr.app', 'https://whisper2.softr.app'];
 
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
-
-  // Handle preflight OPTIONS request
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-
-  next();
-});
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
