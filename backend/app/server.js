@@ -11,10 +11,10 @@ const PORT = process.env.PORT || 3001;
 
 // CORS middleware
 app.use((req, res, next) => {
-  const allowedOrigin = 'https://whisper2.preview.softr.app';
+  const allowedOrigins = ['https://whisper2.preview.softr.app', 'https://whisper2.softr.app'];
   const origin = req.headers.origin;
 
-  if (origin === allowedOrigin) {
+  if (allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
