@@ -1,9 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "pnpm install && pnpm build",
   "builds": [
     {
-      "src": "backend/server.js",
+      "src": "backend/app/server.js",
       "use": "@vercel/node"
     }
   ],
