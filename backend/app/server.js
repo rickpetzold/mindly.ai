@@ -1,6 +1,10 @@
 const express = require("express");
 const fetch = require("node-fetch");
-require("dotenv").config();
+
+// Load config.env only in local development
+if (!process.env.VERCEL) {
+  require("dotenv").config({ path: 'backend/config.env' });
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
