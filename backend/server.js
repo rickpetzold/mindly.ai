@@ -7,7 +7,16 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:3001',
+    'https://whisper2.preview.softr.app',
+    'https://whisper2.softr.app',
+    /\.softr\.app$/,
+    /\.preview\.softr\.app$/
+  ],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -18,6 +27,21 @@ app.use(express.static("frontend/src"));
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const VAPI_ASSISTANT_ID = process.env.VAPI_ASSISTANT_ID;
 const N8N_WEBHOOK_BASE = process.env.N8N_WEBHOOK_BASE;
+const ENVIRONMENT = process.env.ENVIRONMENT || 'deployed';
+
+// Determine webhook URLs based on environment
+const getWebhookUrl = (endpoint) => {
+  if (ENVIRONMENT === 'local') {
+    const testEndpoints = {
+      'new-log-audio': 'webhook-test/new-log-audio',
+      'text-log-input': 'webhook-test/post-query',
+      'image-log-input': 'webhook-test/image-log-input',
+      'get-user-data': 'webhook-test/post-query'
+    };
+    return `${N8N_WEBHOOK_BASE}/${testEndpoints[endpoint] || endpoint}`;
+  }
+  return `${N8N_WEBHOOK_BASE}/${endpoint}`;
+};
 
 // Proxy endpoints
 app.post("/api/vapi/start", async (req, res) => {
@@ -25,7 +49,7 @@ app.post("/api/vapi/start", async (req, res) => {
     const { userId } = req.body;
 
     // Call n8n to get user data
-    const userDataResponse = await fetch(`${N8N_WEBHOOK_BASE}/get-user-data`, {
+    const userDataResponse = await fetch(getWebhookUrl('get-user-data'), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
@@ -48,7 +72,7 @@ app.post("/api/vapi/start", async (req, res) => {
 app.post("/api/logs/audio", async (req, res) => {
   try {
     const response = await fetch(
-      `${N8N_WEBHOOK_BASE}/webhook-test/new-log-audio`,
+      getWebhookUrl('new-log-audio'),
       {
         method: "POST",
         body: req.body,
@@ -65,7 +89,7 @@ app.post("/api/logs/audio", async (req, res) => {
 app.post("/api/logs/text", async (req, res) => {
   try {
     const response = await fetch(
-      `${N8N_WEBHOOK_BASE}/webhook-test/text-log-input`,
+      getWebhookUrl('text-log-input'),
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -82,7 +106,7 @@ app.post("/api/logs/text", async (req, res) => {
 app.post("/api/logs/image", async (req, res) => {
   try {
     const response = await fetch(
-      `${N8N_WEBHOOK_BASE}/webhook-test/image-log-input`,
+      getWebhookUrl('image-log-input'),
       {
         method: "POST",
         body: req.body,

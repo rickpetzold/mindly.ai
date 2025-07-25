@@ -383,9 +383,9 @@
         const userId = window.logged_in_user?.record_id || null;
 
         // --- API Endpoints ---
-        const AUDIO_WEBHOOK_URL = '/api/logs/audio';
-        const TEXT_WEBHOOK_URL = '/api/logs/text';
-        const IMAGE_WEBHOOK_URL = '/api/logs/image';
+        const AUDIO_WEBHOOK_URL = 'https://sonairb.vercel.app/api/logs/audio';
+        const TEXT_WEBHOOK_URL = 'https://sonairb.vercel.app/api/logs/text';
+        const IMAGE_WEBHOOK_URL = 'https://sonairb.vercel.app/api/logs/image';
         
         // --- UI Feedback Functions ---
         const showLoading = (message) => {
@@ -886,7 +886,7 @@
             // --- 2. Call backend proxy to get user data ---
             if (softrUserId) {
               try {
-                const response = await fetch('/api/vapi/start', {
+                const response = await fetch('https://sonairb.vercel.app/api/vapi/start', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
