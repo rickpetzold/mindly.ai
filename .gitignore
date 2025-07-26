@@ -1,4 +1,4 @@
 .eslintrc
 node_modules/
 pnpm-lock.yaml
-
+backend/config.env
