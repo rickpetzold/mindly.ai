@@ -1,3 +1,5 @@
+import { handleOptions } from "../utils";
+
 export async function POST(request: Request) {
   const { N8N_WEBHOOK_BASE, ENVIRONMENT = "local" } = process.env;
 
@@ -38,4 +40,8 @@ export async function POST(request: Request) {
       }
     );
   }
+}
+
+export async function OPTIONS(request: Request) {
+  return handleOptions(request);
 }

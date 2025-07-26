@@ -1,3 +1,5 @@
+import { handleOptions } from "../utils";
+
 export const runtime = "nodejs";
 
 const CORS_HEADERS = {
@@ -8,11 +10,8 @@ const CORS_HEADERS = {
   vary: "Origin",
 };
 
-export function OPTIONS() {
-  return new Response(JSON.stringify({ message: "Hello, world!" }), {
-    status: 200,
-    headers: CORS_HEADERS,
-  });
+export async function OPTIONS(request: Request) {
+  return handleOptions(request);
 }
 
 export async function POST(request: Request) {
