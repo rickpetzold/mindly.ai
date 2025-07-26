@@ -1,4 +1,5 @@
 const fetch = require("node-fetch");
+export const runtime = "nodejs";
 
 // Load config.env only in local development
 if (!process.env.VERCEL) {
