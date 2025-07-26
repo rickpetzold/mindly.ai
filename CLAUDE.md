@@ -1,73 +1,34 @@
-# CLAUDE.md
+# AGENT.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code and cursor when working with code in this repository.
 
 ## Project Overview
 
 This is a brain.os application called "brain.os2" that allows users to capture thoughts through three modalities: audio recording, text input, and image upload with captions. The application integrates with Vapi for voice assistance and n8n for workflow automation.
 
-# TODO: SPLIT MD INTO SINGLE MD + HOOKS
-
 ## Architecture
 
 ### Backend (Node.js/Express)
 
-- **Entry Point**: `backend/server.js` - Express server serving static files and API proxy endpoints
-- **Configuration**: `backend/config.env` - Environment variables for Vapi API keys and n8n webhook URLs
-- **Port**: Runs on port 3001 by default
+Deployed on vercel as serverless function, stores envs, acts as middleware to calls to n8n
+N8N deployed on Hetzner with webhooks
 
 ### Frontend (Vanilla HTML/JS)
 
-- **Entry Point**: `frontend/src/index.html` - Single-page application with embedded JavaScript
-- **UI Framework**: Tailwind CSS for styling, custom CSS for animations and components
-- **Architecture**: Component-based UI with step transitions for different input modes
+Served in airtable
 
 ### Key API Endpoints
 
-- `/api/vapi/start` - Proxy to fetch user data from n8n and return Vapi configuration
-- `/api/logs/audio` - Proxy to n8n webhook for audio log processing
-- `/api/logs/text` - Proxy to n8n webhook for text log processing
-- `/api/logs/image` - Proxy to n8n webhook for image log processing
+- `/api/vapi` - Proxy to fetch user data from n8n and return Vapi configuration
+- `/api/audio` - Proxy to n8n webhook for audio log processing
+- `/api/text` - Proxy to n8n webhook for text log processing
+- `/api/image` - Proxy to n8n webhook for image log processing
 
 ### External Integrations
 
 - **Vapi**: Voice AI assistant with embedded client-side SDK
 - **n8n**: Workflow automation platform for processing different log types
 - **User System**: Integrates with Softr user authentication via `window.logged_in_user.record_id`
-
-## Development Commands
-
-```bash
-# Install dependencies
-pnpm install
-
-# Start development server
-pnpm run dev
-
-# Start production server
-pnpm run start
-```
-
-Both `dev` and `start` commands run `node backend/server.js` and serve the application on http://localhost:3001.
-
-## File Structure
-
-```
-├── backend/
-│   ├── server.js           # Express server with proxy endpoints
-│   ├── config.env          # Environment configuration
-│   └── n8n/               # n8n workflow exports
-├── frontend/src/
-│   └── index.html          # Complete SPA with embedded JS/CSS
-├── package.json            # Dependencies and scripts
-└── pnpm-lock.yaml         # Package lock file
-```
-
-## Key Dependencies
-
-- **Backend**: express, cors, node-fetch, dotenv
-- **Frontend**: Tailwind CSS (CDN), Vapi SDK (CDN), Web APIs (MediaRecorder, Canvas, Camera)
-- **Dev Tools**: ESLint with Airbnb config, Prettier
 
 ## Environment Variables
 
@@ -80,7 +41,5 @@ Required in `backend/config.env`:
 
 ## Security Notes
 
-- API keys are handled server-side in the Express proxy
+- API keys are handled server-side in the node serverless functions proxy
 - Frontend uses Vapi's client-side SDK but user data is fetched through backend proxy
-- File uploads have 5MB size limits for images
-- Audio recordings are limited to 5 minutes maximum
