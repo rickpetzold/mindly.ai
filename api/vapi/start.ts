@@ -5,11 +5,12 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
   "Access-Control-Max-Age": "3600",
+  vary: "Origin",
 };
 
-export async function OPTIONS() {
-  return new Response(null, {
-    status: 204,
+export function OPTIONS() {
+  return new Response(JSON.stringify({ message: "Hello, world!" }), {
+    status: 200,
     headers: CORS_HEADERS,
   });
 }
