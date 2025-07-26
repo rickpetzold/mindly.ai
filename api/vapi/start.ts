@@ -1,10 +1,33 @@
+export const runtime = "nodejs";
+
+// Shared CORS headers
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+// Preflight response for browser OPTIONS request
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
+}
+
 export async function POST(request: Request) {
   const { VAPI_API_KEY, VAPI_ASSISTANT_ID, N8N_WEBHOOK_BASE } = process.env;
 
   if (!VAPI_ASSISTANT_ID || !N8N_WEBHOOK_BASE) {
     return new Response(
       JSON.stringify({ error: "Missing environment variables" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      {
+        status: 500,
+        headers: {
+          ...CORS_HEADERS,
+          "Content-Type": "application/json",
+        },
+      }
     );
   }
 
@@ -38,8 +61,8 @@ export async function POST(request: Request) {
       {
         status: 200,
         headers: {
+          ...CORS_HEADERS,
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*", // Optional: refine per origin
         },
       }
     );
@@ -51,7 +74,10 @@ export async function POST(request: Request) {
       }),
       {
         status: 500,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          ...CORS_HEADERS,
+          "Content-Type": "application/json",
+        },
       }
     );
   }
