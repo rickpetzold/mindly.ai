@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   const getWebhookUrl = (endpoint: string) => {
     const localMap: Record<string, string> = {
       "new-log-audio": "webhook-test/new-log-audio",
-      "text-log-input": "webhook-test/post-query",
+      "text-log-input": "webhook-test/text-log-input",
       "image-log-input": "webhook-test/image-log-input",
       "get-user-data": "webhook-test/post-query",
     };
