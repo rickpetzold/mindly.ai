@@ -1,4 +1,4 @@
-import { handleOptions } from "../utils";
+import { handleOptions, getWebhookUrl } from "../utils";
 
 export const runtime = "nodejs";
 
@@ -15,9 +15,9 @@ export async function OPTIONS(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { VAPI_API_KEY, VAPI_ASSISTANT_ID, N8N_WEBHOOK_BASE } = process.env;
+  const { VAPI_API_KEY, VAPI_ASSISTANT_ID } = process.env;
 
-  if (!VAPI_ASSISTANT_ID || !N8N_WEBHOOK_BASE) {
+  if (!VAPI_ASSISTANT_ID) {
     return new Response(
       JSON.stringify({ error: "Missing environment variables" }),
       {
@@ -30,21 +30,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const getWebhookUrl = (endpoint: string) => {
-    const endpoints: Record<string, string> = {
-      "new-log-audio": "new-log-audio",
-      "text-log-input": "post-query",
-      "image-log-input": "image-log-input",
-      "get-user-data": "post-query",
-    };
-    return `${N8N_WEBHOOK_BASE}/${endpoints[endpoint]}`;
-  };
-
   try {
     const body = await request.json();
     const { userId } = body;
 
-    const userDataResponse = await fetch(getWebhookUrl("get-user-data"), {
+    const userDataResponse = await fetch(getWebhookUrl("vapi-call"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),

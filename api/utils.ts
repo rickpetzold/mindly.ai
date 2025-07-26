@@ -8,3 +8,26 @@ export async function handleOptions(request: Request) {
     },
   });
 }
+
+export function getWebhookUrl(endpoint: string): string {
+  const { N8N_WEBHOOK_BASE, ENVIRONMENT = "local" } = process.env;
+
+  const endpoints: Record<string, string> = {
+    "new-log-audio":
+      ENVIRONMENT === "test"
+        ? "webhook-test/new-log-audio"
+        : "webhook/new-log-audio",
+    "text-log-input":
+      ENVIRONMENT === "test"
+        ? "webhook-test/text-log-input"
+        : "webhook/text-log-input",
+    "image-log-input":
+      ENVIRONMENT === "test"
+        ? "webhook-test/image-log-input"
+        : "webhook/image-log-input",
+    "vapi-call":
+      ENVIRONMENT === "test" ? "webhook-test/vapi-call" : "webhook/vapi-call",
+  };
+
+  return `${N8N_WEBHOOK_BASE}/${endpoints[endpoint]}`;
+}
