@@ -80,8 +80,7 @@ export async function POST(request: Request) {
         speed: 1.5,
         voiceId: "echo",
       },
-      firstMessage:
-        "Hello Rick! Its a wonderful day in Berlin today. How can I assist you?",
+      firstMessage: "Hello! How can I assist you?",
       // Server URL for handling function calls
       serverUrl: `${VAPI_WEBHOOK_BASE || "https://mindly-ai-zeta.vercel.app"}/api/vapi/webhook`,
     };
