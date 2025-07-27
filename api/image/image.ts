@@ -1,5 +1,13 @@
 import { handleOptions, getWebhookUrl } from "../utils";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Max-Age": "3600",
+  vary: "Origin",
+};
+
 export async function POST(request: Request) {
   try {
     // Extract data from FormData (what frontend sends)
@@ -12,8 +20,8 @@ export async function POST(request: Request) {
       return new Response(JSON.stringify({ error: "No image file provided" }), {
         status: 400,
         headers: {
+          ...CORS_HEADERS,
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
         },
       });
     }
@@ -35,8 +43,8 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: {
+        ...CORS_HEADERS,
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
       },
     });
   } catch (err: any) {
@@ -48,8 +56,8 @@ export async function POST(request: Request) {
       {
         status: 500,
         headers: {
+          ...CORS_HEADERS,
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
         },
       }
     );
