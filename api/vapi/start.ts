@@ -34,14 +34,19 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { userId } = body;
 
-    // Get user data from n8n
-    const userDataResponse = await fetch(getWebhookUrl("vapi-call"), {
+    // Get user data from n8n Get User Data workflow
+    const userDataResponse = await fetch(getWebhookUrl("get-user-data"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
     });
 
+    if (!userDataResponse.ok) {
+      throw new Error(`Failed to fetch user data: ${userDataResponse.status}`);
+    }
+
     const userData = await userDataResponse.json();
+    console.log("User data received:", userData);
 
     // Create VAPI assistant with user-specific configuration
     const assistantConfig = {
@@ -52,7 +57,10 @@ export async function POST(request: Request) {
         messages: [
           {
             role: "system",
-            content: userData.userData.final_prompt,
+            content:
+              userData?.final_prompt ||
+              userData?.userData?.final_prompt ||
+              "You are a helpful and friendly AI assistant.",
           },
         ],
       },

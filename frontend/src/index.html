@@ -976,35 +976,41 @@
                 }
             }
 
-            // Start VAPI call with assistant ID
+            // Start VAPI call with assistant ID using HTML Script Tag approach
             function startVAPICall(assistantId, userId) {
-                // Use VAPI Web SDK for starting calls
-                // This is a simplified version - you may need to implement based on VAPI's web integration docs
+                console.log("Starting VAPI call with assistant ID:", assistantId);
                 
-                // Create a secure call configuration
-                const callConfig = {
-                    assistantId: assistantId,
-                    metadata: {
-                        userId: userId
-                    },
-                    // Additional configuration as needed
+                // Load VAPI SDK and initialize
+                var script = document.createElement('script');
+                script.src = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
+                script.defer = true;
+                script.async = true;
+                
+                script.onload = function() {
+                    console.log("VAPI SDK loaded, initializing...");
+                    
+                    // Use the HTML Script Tag approach from VAPI docs
+                    window.vapiInstance = window.vapiSDK.run({
+                        apiKey: "temp_placeholder", // This won't work but follows the pattern
+                        assistant: assistantId,
+                        config: {
+                            theme: "dark",
+                            mode: "voice",
+                            metadata: {
+                                userId: userId
+                            }
+                        }
+                    });
+                    
+                    setupCallEventHandlers(window.vapiInstance);
                 };
-
-                console.log("Starting VAPI call with config:", callConfig);
                 
-                // Note: This is where you would integrate with VAPI's Web SDK
-                // The exact implementation depends on VAPI's current web integration API
-                // For now, showing the secure pattern
+                script.onerror = function() {
+                    console.error("Failed to load VAPI SDK");
+                    alert("Failed to load voice assistant. Please try again.");
+                };
                 
-                // Example of what the integration might look like:
-                // window.vapi.startCall(callConfig)
-                //   .then(call => {
-                //     console.log("Call started:", call);
-                //     setupCallEventHandlers(call);
-                //   })
-                //   .catch(error => {
-                //     console.error("Call failed:", error);
-                //   });
+                document.head.appendChild(script);
             }
 
             // Setup event handlers for the call

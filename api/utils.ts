@@ -30,6 +30,10 @@ export function getWebhookUrl(endpoint: string): string {
         : "webhook/image-log-input",
     "vapi-call":
       ENVIRONMENT === "test" ? "webhook-test/vapi-call" : "webhook/vapi-call",
+    "get-user-data":
+      ENVIRONMENT === "test"
+        ? "webhook-test/get-user-data"
+        : "webhook/get-user-data",
   };
 
   return `${N8N_WEBHOOK_BASE}/${endpoints[endpoint]}`;
