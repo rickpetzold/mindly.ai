@@ -18,20 +18,16 @@ export async function POST(request: Request) {
       });
     }
 
-    // Convert file to base64 so n8n can process it
-    const arrayBuffer = await file.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    // Create a new FormData for n8n with binary file
+    const n8nFormData = new FormData();
+    n8nFormData.append("file", file); // Send the actual file
+    n8nFormData.append("caption", caption);
+    n8nFormData.append("userId", userId);
 
-    // Send JSON to n8n (what n8n expects)
+    // Send FormData to n8n (n8n can handle multipart/form-data)
     const response = await fetch(getWebhookUrl("image-log-input"), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        imageData: base64,
-        fileName: file.name,
-        caption: caption,
-        userId: userId,
-      }),
+      body: n8nFormData, // Send as FormData, not JSON
     });
 
     const data = await response.json();
