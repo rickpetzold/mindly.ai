@@ -11,8 +11,10 @@ export async function handleOptions(request: Request) {
 
 export function getWebhookUrl(endpoint: string): string {
   const { N8N_WEBHOOK_BASE, ENVIRONMENT = "test" } = process.env;
+
   console.log("N8N_WEBHOOK_BASE", N8N_WEBHOOK_BASE);
   console.log("ENVIRONMENT", ENVIRONMENT);
+
   const endpoints: Record<string, string> = {
     "new-log-audio":
       ENVIRONMENT === "test"
