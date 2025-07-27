@@ -35,14 +35,24 @@ export async function POST(request: Request) {
     const { userId } = body;
 
     // Get user data from n8n Get User Data workflow
-    const userDataResponse = await fetch(getWebhookUrl("get-user-data"), {
+    const webhookUrl = getWebhookUrl("get-user-data");
+    console.log("Calling webhook URL:", webhookUrl);
+    console.log("Request body:", JSON.stringify({ userId }));
+
+    const userDataResponse = await fetch(webhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
     });
 
+    console.log("Webhook response status:", userDataResponse.status);
+
     if (!userDataResponse.ok) {
-      throw new Error(`Failed to fetch user data: ${userDataResponse.status}`);
+      const errorText = await userDataResponse.text();
+      console.log("Webhook error response:", errorText);
+      throw new Error(
+        `Failed to fetch user data: ${userDataResponse.status} - ${errorText}`
+      );
     }
 
     const userData = await userDataResponse.json();
