@@ -998,19 +998,30 @@
             // Async SDK loader
             function loadVAPISDK() {
                 return new Promise((resolve, reject) => {
-                    if (window.Vapi) {
+                    if (window.vapiSDK) {
                         resolve();
                         return;
                     }
                     
                     const script = document.createElement('script');
-                    script.src = "https://cdn.jsdelivr.net/npm/@vapi-ai/web-sdk@latest";
+                    script.src = "https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js";
+                    script.defer = true;
                     script.async = true;
                     
                     script.onload = () => {
                         console.log("VAPI SDK loaded successfully");
-                        // Give it a moment to initialize
-                        setTimeout(resolve, 100);
+                        // The HTML script tag version creates window.vapiSDK
+                        if (window.vapiSDK) {
+                            resolve();
+                        } else {
+                            setTimeout(() => {
+                                if (window.vapiSDK) {
+                                    resolve();
+                                } else {
+                                    reject(new Error("VAPI SDK not available"));
+                                }
+                            }, 200);
+                        }
                     };
                     
                     script.onerror = () => {
@@ -1094,23 +1105,24 @@
                 
                 try {
                     // Ensure SDK is loaded
-                    if (!window.Vapi) {
+                    if (!window.vapiSDK) {
                         console.log("VAPI SDK not ready, loading...");
                         await loadVAPISDK();
                     }
                     
-                    // Initialize VAPI client with public key
-                    const vapi = new window.Vapi(VAPI_PUBLIC_KEY);
-                    
-                    // Start call with the assistant - this is async and non-blocking
-                    await vapi.start(assistantId, {
-                        metadata: {
-                            userId: userId
+                    // Use HTML script tag API
+                    const vapiInstance = window.vapiSDK.run({
+                        apiKey: VAPI_PUBLIC_KEY,
+                        assistant: assistantId,
+                        config: {
+                            metadata: {
+                                userId: userId
+                            }
                         }
                     });
                     
                     console.log("VAPI call started successfully");
-                    setupCallEventHandlers(vapi);
+                    setupCallEventHandlers(vapiInstance);
                     
                 } catch (error) {
                     console.error("Failed to start VAPI call:", error);
