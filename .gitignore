@@ -2,3 +2,26 @@
 node_modules/
 pnpm-lock.yaml
 backend/config.env
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dev-debug.log
+# Dependency directories
+# Environment variables
+.env
+# Editor directories and files
+.idea
+.vscode
+
+Task files
+tasks.json
+tasks/ 
+# Task Master AI files
+.task-master/
+.task-master-ai/
+.task-master.json
+.task-master-ai.json

@@ -82,39 +82,8 @@ export async function POST(request: Request) {
       },
       firstMessage:
         "Hello Rick! Its a wonderful day in Berlin today. How can I assist you?",
-      // Configure the store_information tool
-      tools: [
-        {
-          type: "function",
-          function: {
-            name: "store_information",
-            description:
-              "Store important information from the conversation to the user's journal",
-            parameters: {
-              type: "object",
-              properties: {
-                summary: {
-                  type: "string",
-                  description: "Condensed summary of the information to store",
-                },
-                intent: {
-                  type: "string",
-                  enum: ["post"],
-                  description: "Intent to store the information",
-                },
-                userId: {
-                  type: "string",
-                  description: "User ID for the journal entry",
-                },
-              },
-              required: ["summary", "intent", "userId"],
-            },
-          },
-          server: {
-            url: `${VAPI_WEBHOOK_BASE || "https://mindly-ai-zeta.vercel.app"}/api/vapi/webhook`,
-          },
-        },
-      ],
+      // Server URL for handling function calls
+      serverUrl: `${VAPI_WEBHOOK_BASE || "https://mindly-ai-zeta.vercel.app"}/api/vapi/webhook`,
     };
 
     // Create assistant via VAPI API
