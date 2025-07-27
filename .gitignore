@@ -2,6 +2,7 @@
 node_modules/
 pnpm-lock.yaml
 backend/config.env
+CLAUDE.md
 
 # Logs
 logs
