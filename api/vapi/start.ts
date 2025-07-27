@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       voice: {
         provider: "openai",
         model: "gpt-4o-mini-tts",
-        speed: 1.5,
+        speed: 1,
         voiceId: "echo",
       },
       firstMessage: "Hello! How can I assist you?",
