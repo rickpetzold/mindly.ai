@@ -115,7 +115,7 @@
             {
               "id": "a668e80b-bf30-495c-b29a-19912749e19c",
               "name": "Dimension ID",
-              "value": "={{ $json['Dimension ID'] }}",
+              "value": "={{ $json.id }}",
               "type": "string"
             }
           ]
@@ -211,22 +211,6 @@
     },
     {
       "parameters": {
-        "httpMethod": "POST",
-        "path": "text-log-input",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        -256,
-        880
-      ],
-      "id": "cca9cfb9-0c76-44d3-801d-afb17b2ae2ed",
-      "name": "Webhook for text input",
-      "webhookId": "ae8a0b4a-07a9-4b1b-8336-c56b28deb01e"
-    },
-    {
-      "parameters": {
         "assignments": {
           "assignments": [
             {
@@ -297,7 +281,7 @@
       "typeVersion": 1.1,
       "position": [
         -2896,
-        1312
+        1760
       ],
       "id": "49bcc428-7906-4553-9df5-0b73b0d23750",
       "name": "When Executed by Another Workflow"
@@ -332,7 +316,7 @@
       "typeVersion": 3.4,
       "position": [
         -2000,
-        1216
+        1664
       ],
       "id": "4bfcccb5-5510-46df-b062-eea09f9edd78",
       "name": "Clean data"
@@ -374,7 +358,7 @@
       "typeVersion": 2.1,
       "position": [
         -2224,
-        1216
+        1664
       ],
       "id": "e569517c-deea-4341-a332-c61585c45345",
       "name": "Search logs from this dimension",
@@ -395,7 +379,7 @@
       "typeVersion": 1,
       "position": [
         -1776,
-        1216
+        1664
       ],
       "id": "afb97f8f-6686-4380-a65e-920cc67ee08d",
       "name": "Aggregate logs"
@@ -428,7 +412,7 @@
       "typeVersion": 1.2,
       "position": [
         -1456,
-        1440
+        1888
       ],
       "id": "59d27a8e-f6be-469e-b014-6ceefebd3734",
       "name": "OpenAI Chat Model2",
@@ -462,7 +446,7 @@
       "typeVersion": 2.1,
       "position": [
         -2448,
-        1216
+        1664
       ],
       "id": "d2390faf-1935-4ecc-87fa-e57e382b2a46",
       "name": "Get the dimension",
@@ -490,7 +474,7 @@
       "typeVersion": 1.7,
       "position": [
         -1552,
-        1216
+        1664
       ],
       "id": "193a97d2-2f51-4628-9a47-9adca8b6705c",
       "name": "Generate dimension digest"
@@ -676,7 +660,7 @@
       "typeVersion": 2.1,
       "position": [
         -1152,
-        1216
+        1664
       ],
       "id": "787ec566-8e2b-46a8-ba0b-b0492e9ae3db",
       "name": "Import digest",
@@ -686,22 +670,6 @@
           "name": "Airtable Personal Access Token account"
         }
       }
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "image-log-input",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [
-        -576,
-        496
-      ],
-      "id": "f03bc84f-680e-44f6-b11e-b85e74d2a1c4",
-      "name": "Webhook1",
-      "webhookId": "ae8a0b4a-07a9-4b1b-8336-c56b28deb01e"
     },
     {
       "parameters": {
@@ -728,8 +696,8 @@
       "name": "Analyze image",
       "credentials": {
         "openAiApi": {
-          "id": "sQ9TKTJSa7s5gdZE",
-          "name": "OpenAi account 2"
+          "id": "zVwq40DW8Esza0nT",
+          "name": "OpenAi account"
         }
       }
     },
@@ -740,13 +708,13 @@
             {
               "id": "0672cc0f-1d3d-44c7-855d-e28d2084a4b6",
               "name": "Thought text",
-              "value": "=Image Caption: \n{{ $('Webhook1').item.json.body.caption }} \n\n\nImage Description: \n{{ $json.content }}",
+              "value": "=Image Caption: \n{{ $('Image').item.json.body.caption }} \n\n\nImage Description: \n{{ $json.content }}",
               "type": "string"
             },
             {
               "id": "77819c18-bf81-434b-9d1a-763ee8070c23",
               "name": "User ID",
-              "value": "={{ $('Webhook1').item.json.body.userId }}",
+              "value": "={{ $('Image').item.json.body.userId }}",
               "type": "string"
             }
           ]
@@ -839,7 +807,7 @@
     {
       "parameters": {
         "httpMethod": "POST",
-        "path": "post-query",
+        "path": "vapi-call",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
@@ -1461,8 +1429,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        3184,
-        688
+        -3120,
+        1328
       ],
       "id": "85a95af5-9dde-426c-bd7b-653289cfbf10",
       "name": "Execute Workflow"
@@ -1503,8 +1471,8 @@
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1.2,
       "position": [
-        2512,
-        400
+        -3120,
+        1104
       ],
       "id": "3eb9bb14-da90-4bd8-890f-8a9c18d2e2a9",
       "name": "Execute Workflow1"
@@ -1708,8 +1676,8 @@
       "typeVersion": 1.6,
       "credentials": {
         "openAiApi": {
-          "id": "sQ9TKTJSa7s5gdZE",
-          "name": "OpenAi account 2"
+          "id": "zVwq40DW8Esza0nT",
+          "name": "OpenAi account"
         }
       }
     },
@@ -1946,8 +1914,8 @@
       "name": "Transcribe a recording",
       "credentials": {
         "openAiApi": {
-          "id": "sQ9TKTJSa7s5gdZE",
-          "name": "OpenAi account 2"
+          "id": "zVwq40DW8Esza0nT",
+          "name": "OpenAi account"
         }
       }
     },
@@ -2123,8 +2091,8 @@
       "name": "OpenAI Chat Model4",
       "credentials": {
         "openAiApi": {
-          "id": "sQ9TKTJSa7s5gdZE",
-          "name": "OpenAi account 2"
+          "id": "zVwq40DW8Esza0nT",
+          "name": "OpenAi account"
         }
       }
     },
@@ -2156,7 +2124,7 @@
       "typeVersion": 1,
       "position": [
         -3120,
-        1120
+        1568
       ],
       "id": "5ae2d9cd-eeeb-4cc6-b18e-38cb5312a6fc",
       "name": "When clicking ‘Execute workflow’"
@@ -2179,7 +2147,7 @@
       "typeVersion": 3.4,
       "position": [
         -2896,
-        1120
+        1568
       ],
       "id": "c9c7c878-4441-412f-b96e-c6effab8fd51",
       "name": "Edit Fields"
@@ -2202,153 +2170,60 @@
       "typeVersion": 3.4,
       "position": [
         -2672,
-        1216
+        1664
       ],
       "id": "c1070b58-750a-423c-9f6f-bf4426a0ff63",
       "name": "Clean ID"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "image-log-input",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -576,
+        496
+      ],
+      "id": "f03bc84f-680e-44f6-b11e-b85e74d2a1c4",
+      "name": "Image",
+      "webhookId": "ae8a0b4a-07a9-4b1b-8336-c56b28deb01e"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "text-log-input",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        880
+      ],
+      "id": "cca9cfb9-0c76-44d3-801d-afb17b2ae2ed",
+      "name": "Text",
+      "webhookId": "ae8a0b4a-07a9-4b1b-8336-c56b28deb01e"
+    },
+    {
+      "parameters": {
+        "content": "the vapi instance obtains all dimensions, does not need to call GET, store when we recognize POST on the fly"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        208,
+        832
+      ],
+      "id": "25db8430-f39e-4eb6-b1d1-15b3e7b8a505",
+      "name": "Sticky Note"
     }
   ],
   "pinData": {
-    "Webhook for audio transcription": [
-      {
-        "json": {
-          "headers": {
-            "host": "twocompanion.app.n8n.cloud",
-            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-            "content-length": "123143",
-            "accept": "*/*",
-            "accept-encoding": "gzip, br",
-            "accept-language": "en-GB,en-US;q=0.9,en;q=0.8,fr-FR;q=0.7,fr;q=0.6,de;q=0.5",
-            "cdn-loop": "cloudflare; loops=1; subreqs=1",
-            "cf-connecting-ip": "217.9.109.94",
-            "cf-ew-via": "15",
-            "cf-ipcountry": "DE",
-            "cf-ray": "961b35f7a2304d3d-FRA",
-            "cf-visitor": "{\"scheme\":\"https\"}",
-            "cf-worker": "n8n.cloud",
-            "content-type": "multipart/form-data; boundary=----WebKitFormBoundarynAQpNmFwZ0z7m0zS",
-            "origin": "https://2companion.softr.app",
-            "priority": "u=1, i",
-            "referer": "https://2companion.softr.app/",
-            "sec-ch-ua": "\"Google Chrome\";v=\"137\", \"Chromium\";v=\"137\", \"Not/A)Brand\";v=\"24\"",
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": "\"macOS\"",
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "cross-site",
-            "x-forwarded-for": "217.9.109.94, 172.69.150.92",
-            "x-forwarded-host": "twocompanion.app.n8n.cloud",
-            "x-forwarded-port": "443",
-            "x-forwarded-proto": "https",
-            "x-forwarded-server": "traefik-prod-users-gwc-71-c76b59f55-v64cs",
-            "x-is-trusted": "yes",
-            "x-real-ip": "217.9.109.94"
-          },
-          "params": {},
-          "query": {},
-          "body": {
-            "userId": "recykwDWfFuasgENB"
-          },
-          "webhookUrl": "https://twocompanion.app.n8n.cloud/webhook/new-log-audio",
-          "executionMode": "production"
-        }
-      }
-    ],
-    "Webhook for text input": [
-      {
-        "json": {
-          "headers": {
-            "host": "twocompanion.app.n8n.cloud",
-            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
-            "content-length": "97",
-            "accept": "*/*",
-            "accept-encoding": "gzip, br",
-            "accept-language": "en-GB,en-US;q=0.9,en;q=0.8,fr-FR;q=0.7,fr;q=0.6,de;q=0.5",
-            "cdn-loop": "cloudflare; loops=1; subreqs=1",
-            "cf-connecting-ip": "217.9.109.94",
-            "cf-ew-via": "15",
-            "cf-ipcountry": "DE",
-            "cf-ray": "961b7b0b94badbab-FRA",
-            "cf-visitor": "{\"scheme\":\"https\"}",
-            "cf-worker": "n8n.cloud",
-            "content-type": "application/json",
-            "origin": "https://2companion.softr.app",
-            "priority": "u=1, i",
-            "referer": "https://2companion.softr.app/",
-            "sec-ch-ua": "\"Google Chrome\";v=\"137\", \"Chromium\";v=\"137\", \"Not/A)Brand\";v=\"24\"",
-            "sec-ch-ua-mobile": "?0",
-            "sec-ch-ua-platform": "\"macOS\"",
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "cross-site",
-            "x-forwarded-for": "217.9.109.94, 172.71.144.7",
-            "x-forwarded-host": "twocompanion.app.n8n.cloud",
-            "x-forwarded-port": "443",
-            "x-forwarded-proto": "https",
-            "x-forwarded-server": "traefik-prod-users-gwc-71-c76b59f55-6xbcs",
-            "x-is-trusted": "yes",
-            "x-real-ip": "217.9.109.94"
-          },
-          "params": {},
-          "query": {},
-          "body": {
-            "text_log": "I think i don't want to be friend with thomas anymore",
-            "userId": "recykwDWfFuasgENB"
-          },
-          "webhookUrl": "https://twocompanion.app.n8n.cloud/webhook/text-log-input",
-          "executionMode": "production"
-        }
-      }
-    ],
-    "Webhook1": [
-      {
-        "json": {
-          "headers": {
-            "host": "twocompanion.app.n8n.cloud",
-            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15",
-            "content-length": "88300",
-            "accept": "*/*",
-            "accept-encoding": "gzip, br",
-            "accept-language": "zh-CN,zh-Hans;q=0.9",
-            "cdn-loop": "cloudflare; loops=1; subreqs=1",
-            "cf-connecting-ip": "217.9.109.94",
-            "cf-ew-via": "15",
-            "cf-ipcountry": "DE",
-            "cf-ray": "961ba38935c24d9c-FRA",
-            "cf-visitor": "{\"scheme\":\"https\"}",
-            "cf-worker": "n8n.cloud",
-            "content-type": "multipart/form-data; boundary=----WebKitFormBoundaryup6YReamoKwNgQvm",
-            "origin": "https://2companion.softr.app",
-            "referer": "https://2companion.softr.app/",
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "cross-site",
-            "x-forwarded-for": "217.9.109.94, 172.69.150.158",
-            "x-forwarded-host": "twocompanion.app.n8n.cloud",
-            "x-forwarded-port": "443",
-            "x-forwarded-proto": "https",
-            "x-forwarded-server": "traefik-prod-users-gwc-71-c76b59f55-jdgzl",
-            "x-is-trusted": "yes",
-            "x-real-ip": "217.9.109.94"
-          },
-          "params": {},
-          "query": {},
-          "body": {
-            "caption": "This is me I guess",
-            "userId": "recykwDWfFuasgENB"
-          },
-          "webhookUrl": "https://twocompanion.app.n8n.cloud/webhook/image-log-input",
-          "executionMode": "production"
-        }
-      }
-    ],
-    "When Executed by Another Workflow": [
-      {
-        "json": {
-          "Dimension ID": "recLy8kqo5ieFBnIh"
-        }
-      }
-    ],
     "Telegram Trigger": [
       {
         "json": {
@@ -2379,6 +2254,13 @@
               "file_size": 90431
             }
           }
+        }
+      }
+    ],
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "Dimension ID": "recYFXMR2mGHAIHkV"
         }
       }
     ]
@@ -2455,17 +2337,6 @@
         [
           {
             "node": "Final start variables",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Webhook for text input": {
-      "main": [
-        [
-          {
-            "node": "Clean webhook variable1",
             "type": "main",
             "index": 0
           }
@@ -2582,17 +2453,6 @@
         ]
       ]
     },
-    "Webhook1": {
-      "main": [
-        [
-          {
-            "node": "Analyze image",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Analyze image": {
       "main": [
         [
@@ -2702,13 +2562,7 @@
     },
     "Store the log": {
       "main": [
-        [
-          {
-            "node": "Execute Workflow1",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Create new dimension": {
@@ -2724,13 +2578,7 @@
     },
     "Store the log1": {
       "main": [
-        [
-          {
-            "node": "Execute Workflow",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Generate pre-prompt for image": {
@@ -3028,13 +2876,35 @@
           }
         ]
       ]
+    },
+    "Image": {
+      "main": [
+        [
+          {
+            "node": "Analyze image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text": {
+      "main": [
+        [
+          {
+            "node": "Clean webhook variable1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "38bd3c25-34c2-4601-8cf9-676487d9fc6b",
+  "versionId": "cf48d38f-c25c-4a02-b9b7-3ead66881532",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "70a3d09db6a82b183a295ca42d7a79935813af1750cf73d1926974ded643c31a"
